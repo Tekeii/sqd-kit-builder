@@ -127,7 +127,7 @@ input[type=checkbox]{ accent-color:var(--neon); width:18px; height:18px; }
       </div>
       <div class="promo"><span class="pp">£25</span><span class="pt"><b>per full strip</b><small>Shirt, shorts, socks &amp; all printing included</small></span></div>
       <div class="promo-note">This is just a preview of your strip — an exact mockup will be shared during the order phase.</div>
-      <div style="text-align:center;padding-bottom:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button id="reqQuote" class="kf-dl">Order Form</button><button id="dl" class="kf-dl" style="background:var(--surface2);color:var(--text);border:1px solid var(--line)">Download PNG</button></div>
+      <div style="text-align:center;padding-bottom:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button id="reqQuote" class="kf-dl">Order Form</button><button id="contactUs" class="kf-dl" style="background:var(--surface2);color:var(--text);border:1px solid var(--line)">Contact Us</button><button id="dl" class="kf-dl" style="background:var(--surface2);color:var(--text);border:1px solid var(--line)">Download PNG</button></div>
     </section>
   </div>
 <div class="modal-bg" id="orderModal">
@@ -594,6 +594,7 @@ function downloadKit(name){ const gap=20, W=CW*2+gap; const lines=specSummary().
   x.textAlign='right'; x.fillStyle='#8b938d'; x.font='800 17px Arial,sans-serif'; x.fillText('SQD SPORTSWEAR  ·  £25 PER STRIP', bx+bw-pad, by+33); x.textAlign='left';
   x.fillStyle='#f3f5f3'; x.font='600 18px Arial,sans-serif';
   lines.forEach((ln,i)=>{ x.fillText(ln, bx+pad, by+64+i*lineH); });
+  x.save();x.globalAlpha=0.20;x.fillStyle='#0a0c0b';x.textAlign='center';x.textBaseline='middle';x.translate(c.width/2,c.height/2);x.rotate(-Math.atan2(c.height,c.width));x.font='900 '+Math.round(c.width*0.12)+'px Arial,sans-serif';var _d=Math.hypot(c.width,c.height),_st=Math.round(c.width*0.17);for(var _y=-_d/2;_y<_d/2;_y+=_st){x.fillText('SQD SPORTSWEAR · PREVIEW',0,_y);}x.restore();
   const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download=name||'sqd-kit.png'; a.click(); }
 function specSummary(){ const c=state.teamColors; const sh=SHORT_STYLES.find(x=>x.id===state.shorts.style), sk=SOCK_STYLES.find(x=>x.id===state.sock.style);
   let s='Pattern: '+(state.pattern==='none'?'Plain (no pattern)':PAT_MANIFEST[state.pattern].label);
@@ -648,6 +649,7 @@ function init(){
   document.querySelectorAll('#viewSeg button').forEach(btn=>btn.onclick=()=>{ state.view=btn.dataset.v; document.querySelectorAll('#viewSeg button').forEach(z=>z.classList.toggle('on',z===btn)); applyView(); });
   document.getElementById('zoom').oninput=e=>{ state.zoom=+e.target.value; applyView(); };
   document.getElementById('dl').onclick=()=>downloadKit('sqd-kit.png');
+  document.getElementById('contactUs').onclick=()=>window.open('https://www.sqdsportswear.com/pages/contact','_blank');
   setupOrderForm();
   restoreClub();
   setupNumberDrag(); setupCanvasClicks(); applyView(); renderStep(); renderAll();
