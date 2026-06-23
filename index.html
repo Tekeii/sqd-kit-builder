@@ -234,7 +234,7 @@ async function legBoxes(side){
 function eachLeg(legs){ return [legs.L, legs.R]; }
 function outerEdge(lg){ const cx=lg.x+lg.w/2; return cx>CW/2 ? {x:lg.x+lg.w, dir:-1} : {x:lg.x, dir:1}; }
 async function drawShorts(ctx, side){
-  await fillZone(ctx, side, 'shorts', state.shorts.base);
+  await fillZone(ctx, side, 'shorts', TC(0));
   const st=state.shorts.style; if(st==='plain') return;
   const shortsMask=await asset('mp_'+side+'_shorts');
   const sbox=await maskBox(side,['shorts'],'shorts');
@@ -267,7 +267,7 @@ async function drawShorts(ctx, side){
   }
 }
 async function drawSocks(ctx, side){
-  await fillZone(ctx, side, 'socks', state.sock.base);
+  await fillZone(ctx, side, 'socks', TC(0));
   const st=state.sock.style; if(st==='plain') return;
   const mask=await asset('mp_'+side+'_socks'); const box=await maskBox(side,['socks'],'socks');
   const off=document.createElement('canvas'); off.width=CW; off.height=CH; const o=off.getContext('2d');
@@ -465,7 +465,7 @@ function buildPatGrid(){
   grid.innerHTML='';
   list.slice(state.patPage*PER_PAGE,(state.patPage+1)*PER_PAGE).forEach(p=>{
     const div=document.createElement('div'); div.className='kf-thumb'+(state.pattern===p.id?' active':''); div.dataset.p=p.id;
-    div.innerHTML=`<div class="img">${p.id==='none'?'None':'<img loading="lazy" src="assets/thumbs/'+p.id+'.jpg" alt="">'}</div><span>${p.label}</span>`;
+    div.innerHTML=`<div class="img">${p.id==='none'?'None':'<img loading="lazy" src="assets/thumbs/'+p.id+'.jpg?v='+BUILD+'" alt="">'}</div><span>${p.label}</span>`;
     div.onclick=()=>{ state.pattern=p.id; renderStep(); renderAll(); };
     grid.appendChild(div);
   });
@@ -539,7 +539,7 @@ function renderShortsStep(b){
   const st=state.shorts.style;
   let html='<div class="sec-title">Shorts</div><div class="kf-field"><label>Style</label><select class="kf-select" id="shStyle">'
     + SHORT_STYLES.map(s=>`<option value="${s.id}" ${st===s.id?'selected':''}>${s.label}</option>`).join('')+'</select></div>'
-    + colorRowS('Base colour','base');
+    +'<div class="kf-field"><span style="color:#8b938d;font-weight:600;font-size:12px">Base colour follows the shirt\u2019s Primary \u2014 set it in the Shirt tab.</span></div>';
   if(st==='stripes') html+='<div class="sub-title">Stripe colours</div>'+colorRowS('Outer','stripe')+colorRowS('Centre','stripe2');
   else if(st==='pillar') html+='<div class="sub-title">Pillar</div>'+colorRowS('Border','pillarBorder')+colorRowS('Centre (no pattern)','stripe2');
   else if(st==='flares'){ html+='<div class="sub-title">Flares</div>'+colorRowS('Left flare','flareL')+colorRowS('Right flare','flareR')
@@ -555,7 +555,7 @@ function renderSocksStep(b){
   const st=state.sock.style;
   let html='<div class="sec-title">Socks</div><div class="kf-field"><label>Style</label><select class="kf-select" id="skStyle">'
     + SOCK_STYLES.map(s=>`<option value="${s.id}" ${st===s.id?'selected':''}>${s.label}</option>`).join('')+'</select></div>'
-    + colorRowK('Base colour','base');
+    +'<div class="kf-field"><span style="color:#8b938d;font-weight:600;font-size:12px">Base colour follows the shirt\u2019s Primary \u2014 set it in the Shirt tab.</span></div>';
   if(st==='hoops'||st==='stripes') html+='<div class="sub-title">Accent</div>'+colorRowK('Accent colour','accent');
   else if(st==='topband') html+='<div class="sub-title">Top band</div>'+colorRowK('Band colour','accent')+colorRowK('Trim line','accent2');
   html+='<div class="sub-title">SQD logo</div>'+colorRow2('lgSocks','Logo colour',state.logo.socksColor);
@@ -645,11 +645,12 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
+const BUILD='2';
 const _patLoaded={};
-function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json').then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
+function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
   try{
-    const [base,man]=await Promise.all([fetch('assets/base.json').then(r=>r.json()), fetch('assets/manifest.json').then(r=>r.json())]);
+    const [base,man]=await Promise.all([fetch('assets/base.json?v='+BUILD,{cache:'no-store'}).then(r=>r.json()), fetch('assets/manifest.json?v='+BUILD,{cache:'no-store'}).then(r=>r.json())]);
     ASSETS=base.assets; NUMFONTS=base.numfonts; PAT_MANIFEST=man;
     PATTERNS=[{id:'none',label:'None'}].concat(Object.keys(PAT_MANIFEST).map(id=>({id,label:PAT_MANIFEST[id].label})));
     CATS=['All','Stripes','Geometric','Abstract','Camo','Texture'].filter(c=>c==='All'||Object.values(PAT_MANIFEST).some(m=>m.cat===c));
