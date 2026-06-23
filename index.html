@@ -144,6 +144,13 @@ input[type=checkbox]{ accent-color:var(--neon); width:18px; height:18px; }
     <div class="mbtns"><button class="mbtn wa" id="sendWA">Send via WhatsApp</button><button class="mbtn em" id="sendEM">Send via Email</button></div>
   </div>
 </div>
+<div class="modal-bg" id="contactModal">
+  <div class="modal">
+    <div class="modal-top"><h2>Contact Us</h2><button id="cmClose" class="omx">&times;</button></div>
+    <div class="mut">Got a question about your design? Message us on WhatsApp or email and we'll help. Your kit mockup downloads automatically so you can attach it to your message.</div>
+    <div class="mbtns"><button class="mbtn wa" id="cWA">Chat on WhatsApp</button><button class="mbtn em" id="cEM">Email us</button></div>
+  </div>
+</div>
 <script>
 let ASSETS = {};
 let PAT_MANIFEST = {};
@@ -649,7 +656,7 @@ function init(){
   document.querySelectorAll('#viewSeg button').forEach(btn=>btn.onclick=()=>{ state.view=btn.dataset.v; document.querySelectorAll('#viewSeg button').forEach(z=>z.classList.toggle('on',z===btn)); applyView(); });
   document.getElementById('zoom').oninput=e=>{ state.zoom=+e.target.value; applyView(); };
   document.getElementById('dl').onclick=()=>downloadKit('sqd-kit.png');
-  document.getElementById('contactUs').onclick=()=>window.open('https://www.sqdsportswear.com/pages/contact','_blank');
+  (function(){var cm=document.getElementById('contactModal');document.getElementById('contactUs').onclick=function(){cm.classList.add('on');};document.getElementById('cmClose').onclick=function(){cm.classList.remove('on');};cm.onclick=function(e){if(e.target===cm)cm.classList.remove('on');};var msg=function(){return 'Hi SQD! I\'ve been using the kit builder and have a question about this design. I\'ve attached my mockup.\n\n'+specSummary();};document.getElementById('cWA').onclick=function(){downloadKit('sqd-kit.png');window.open('https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(msg()),'_blank');};document.getElementById('cEM').onclick=function(){downloadKit('sqd-kit.png');window.location.href='mailto:'+SQD_EMAIL+'?subject='+encodeURIComponent('Kit enquiry — SQD builder')+'&body='+encodeURIComponent(msg());};})();
   setupOrderForm();
   restoreClub();
   setupNumberDrag(); setupCanvasClicks(); applyView(); renderStep(); renderAll();
