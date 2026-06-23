@@ -336,10 +336,6 @@ async function drawClub(ctx, side){
   let hh=img.height*(w/img.width); ctx.drawImage(img, cx-w/2, cy-hh/2, w, hh);
   const legs=await legBoxes(side); const lg=legs.R;
   if(lg.w>4){ const sw=lg.w*0.42*state.club.size, sh=img.height*(sw/img.width); ctx.drawImage(img, lg.x+lg.w*0.40-sw/2, lg.y+lg.h*0.80-sh/2, sw, sh); }
-  const skb=await maskBox(side,['socks'],'socks');
-  if(skb.w>4){ const kw=skb.w*0.17, kh=img.height*(kw/img.width);
-    ctx.drawImage(img, skb.x+skb.w*0.149-kw/2, skb.y+skb.h*0.55-kh/2, kw, kh);
-    ctx.drawImage(img, skb.x+skb.w*0.847-kw/2, skb.y+skb.h*0.55-kh/2, kw, kh); }
 }
 async function logoMark(ctx, cx, cy, w, color){
   const img=await asset('logo_sqd');
