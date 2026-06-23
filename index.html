@@ -160,8 +160,8 @@ const state={
   step:'shirt', view:'both', zoom:320,
   colors:{ body:'#c9ced4', sides:'#aab0b8', sleeves:'#aab0b8', cuffs:'#ffffff', collar:'#ffffff', piping:'#ffffff', socks:'#c9ced4' },
   pattern:'none', patCat:'All', patSearch:'', patPage:0, patternTarget:'whole', teamColors:['#d2d6db','#ffffff','#9aa1aa','#6e757e','#e6e8eb','#4b525a'],
-  shorts:{ style:'plain', base:'#c9ced4', stripe:'#ffffff', stripe2:'#9aa1aa', pillarBorder:'#6e757e', flareL:'#9aa1aa', flareR:'#6e757e', flarePattern:false },
-  sock:{ style:'plain', base:'#c9ced4', accent:'#ffffff', accent2:'#9aa1aa' },
+  shorts:{ style:'plain', base:'#c9ced4', stripe:'#ffffff', stripe2:'#9aa1aa', pillarBorder:'#6e757e', flareL:'#9aa1aa', flareR:'#6e757e', flarePattern:false, baseAuto:true },
+  sock:{ style:'plain', base:'#c9ced4', accent:'#ffffff', accent2:'#9aa1aa', baseAuto:true },
   logo:{ shirtPos:'chest', shirtColor:'#ffffff', shortsColor:'#ffffff', socksColor:'#ffffff' },
   club:{ src:null, img:null, removeWhite:true, pos:'center', size:1 },
   number:'9', numberX:280, numberY:180, numberSize:135, numberFont:'block', numberColor:'#ffffff', outline:'#15284f', whiteBg:true,
@@ -234,7 +234,7 @@ async function legBoxes(side){
 function eachLeg(legs){ return [legs.L, legs.R]; }
 function outerEdge(lg){ const cx=lg.x+lg.w/2; return cx>CW/2 ? {x:lg.x+lg.w, dir:-1} : {x:lg.x, dir:1}; }
 async function drawShorts(ctx, side){
-  await fillZone(ctx, side, 'shorts', TC(0));
+  await fillZone(ctx, side, 'shorts', state.shorts.baseAuto?TC(0):state.shorts.base);
   const st=state.shorts.style; if(st==='plain') return;
   const shortsMask=await asset('mp_'+side+'_shorts');
   const sbox=await maskBox(side,['shorts'],'shorts');
@@ -267,7 +267,7 @@ async function drawShorts(ctx, side){
   }
 }
 async function drawSocks(ctx, side){
-  await fillZone(ctx, side, 'socks', TC(0));
+  await fillZone(ctx, side, 'socks', state.sock.baseAuto?TC(0):state.sock.base);
   const st=state.sock.style; if(st==='plain') return;
   const mask=await asset('mp_'+side+'_socks'); const box=await maskBox(side,['socks'],'socks');
   const off=document.createElement('canvas'); off.width=CW; off.height=CH; const o=off.getContext('2d');
@@ -408,7 +408,7 @@ function wireColors(root){
   root.querySelectorAll('[data-z]').forEach(row=>{ const key=row.dataset.z;
     row.onclick=()=>openColorPicker(row, state.colors[key], c=>{ state.colors[key]=c; updateRow(row,c); renderAll(); }); });
   root.querySelectorAll('[data-s]').forEach(row=>{ const key=row.dataset.s;
-    row.onclick=()=>openColorPicker(row, state.shorts[key], c=>{ state.shorts[key]=c; updateRow(row,c); renderAll(); }); });
+    row.onclick=()=>openColorPicker(row, state.shorts[key], c=>{ state.shorts[key]=c; if(key==='base') state.shorts.baseAuto=false; updateRow(row,c); renderAll(); }); });
 }
 function updateRow(row,v){ row.querySelector('.kf-ring>span').style.background=v; row.querySelector('.nm').textContent=hexName(v); row.querySelector('.hex').textContent=v.toUpperCase(); }
 const SWATCHES=['#ffffff','#d2d6db','#9aa1aa','#5b6168','#2b2f36','#111111','#0a1f44','#15284f','#1d4ed8','#2f80ed','#56ccf2','#0ea5b7','#0e7a5f','#1f9d55','#27ae60','#a3e635','#fde047','#f2c94c','#f59e0b','#ea580c','#eb5757','#c0392b','#9b2226','#7b1fa2','#db2777','#f8c8d8','#8d5524','#5c4033'];
@@ -534,12 +534,14 @@ function colorRowK(label,key){ const v=state.sock[key];
     <span class="kf-ring"><span style="background:${v}"></span></span><span class="nm">${hexName(v)}</span><span class="hex">${v.toUpperCase()}</span>
     <input type="color" value="${v}" style="position:absolute;opacity:0;width:0;height:0"></div></div>`; }
 function wireSock(root){ root.querySelectorAll('[data-k]').forEach(row=>{ const key=row.dataset.k;
-  row.onclick=()=>openColorPicker(row, state.sock[key], c=>{ state.sock[key]=c; updateRow(row,c); renderAll(); }); }); }
+  row.onclick=()=>openColorPicker(row, state.sock[key], c=>{ state.sock[key]=c; if(key==='base') state.sock.baseAuto=false; updateRow(row,c); renderAll(); }); }); }
 function renderShortsStep(b){
   const st=state.shorts.style;
+  if(state.shorts.baseAuto) state.shorts.base=TC(0);
   let html='<div class="sec-title">Shorts</div><div class="kf-field"><label>Style</label><select class="kf-select" id="shStyle">'
     + SHORT_STYLES.map(s=>`<option value="${s.id}" ${st===s.id?'selected':''}>${s.label}</option>`).join('')+'</select></div>'
-    +'<div class="kf-field"><span style="color:#8b938d;font-weight:600;font-size:12px">Base colour follows the shirt\u2019s Primary \u2014 set it in the Shirt tab.</span></div>';
+    + colorRowS('Base colour','base')
+    +'<div class="kf-field"><label class="kf-color" style="cursor:default;justify-content:space-between"><span>Match shirt Primary</span><input type="checkbox" id="shBaseAuto" '+(state.shorts.baseAuto?'checked':'')+'></label></div>';
   if(st==='stripes') html+='<div class="sub-title">Stripe colours</div>'+colorRowS('Outer','stripe')+colorRowS('Centre','stripe2');
   else if(st==='pillar') html+='<div class="sub-title">Pillar</div>'+colorRowS('Border','pillarBorder')+colorRowS('Centre (no pattern)','stripe2');
   else if(st==='flares'){ html+='<div class="sub-title">Flares</div>'+colorRowS('Left flare','flareL')+colorRowS('Right flare','flareR')
@@ -548,19 +550,23 @@ function renderShortsStep(b){
   b.innerHTML=html;
   b.querySelector('#shStyle').onchange=e=>{ state.shorts.style=e.target.value; renderShortsStep(b); renderAll(); };
   const fp=b.querySelector('#flarePat'); if(fp) fp.onchange=e=>{ state.shorts.flarePattern=e.target.checked; renderAll(); };
+  const sba=b.querySelector('#shBaseAuto'); if(sba) sba.onchange=e=>{ state.shorts.baseAuto=e.target.checked; if(e.target.checked) state.shorts.base=TC(0); renderShortsStep(b); renderAll(); };
   wireColors(b); wireChips(b);
   wireCG(b,'lgShorts',()=>state.logo.shortsColor,c=>state.logo.shortsColor=c);
 }
 function renderSocksStep(b){
   const st=state.sock.style;
+  if(state.sock.baseAuto) state.sock.base=TC(0);
   let html='<div class="sec-title">Socks</div><div class="kf-field"><label>Style</label><select class="kf-select" id="skStyle">'
     + SOCK_STYLES.map(s=>`<option value="${s.id}" ${st===s.id?'selected':''}>${s.label}</option>`).join('')+'</select></div>'
-    +'<div class="kf-field"><span style="color:#8b938d;font-weight:600;font-size:12px">Base colour follows the shirt\u2019s Primary \u2014 set it in the Shirt tab.</span></div>';
+    + colorRowK('Base colour','base')
+    +'<div class="kf-field"><label class="kf-color" style="cursor:default;justify-content:space-between"><span>Match shirt Primary</span><input type="checkbox" id="skBaseAuto" '+(state.sock.baseAuto?'checked':'')+'></label></div>';
   if(st==='hoops'||st==='stripes') html+='<div class="sub-title">Accent</div>'+colorRowK('Accent colour','accent');
   else if(st==='topband') html+='<div class="sub-title">Top band</div>'+colorRowK('Band colour','accent')+colorRowK('Trim line','accent2');
   html+='<div class="sub-title">SQD logo</div>'+colorRow2('lgSocks','Logo colour',state.logo.socksColor);
   b.innerHTML=html;
   b.querySelector('#skStyle').onchange=e=>{ state.sock.style=e.target.value; renderSocksStep(b); renderAll(); };
+  const kba=b.querySelector('#skBaseAuto'); if(kba) kba.onchange=e=>{ state.sock.baseAuto=e.target.checked; if(e.target.checked) state.sock.base=TC(0); renderSocksStep(b); renderAll(); };
   wireSock(b); wireChips(b);
   wireCG(b,'lgSocks',()=>state.logo.socksColor,c=>state.logo.socksColor=c);
 }
@@ -645,7 +651,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='2';
+const BUILD='3';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
