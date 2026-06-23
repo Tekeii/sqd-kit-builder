@@ -651,7 +651,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='3';
+const BUILD='4';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
@@ -659,7 +659,7 @@ async function boot(){
     const [base,man]=await Promise.all([fetch('assets/base.json?v='+BUILD,{cache:'no-store'}).then(r=>r.json()), fetch('assets/manifest.json?v='+BUILD,{cache:'no-store'}).then(r=>r.json())]);
     ASSETS=base.assets; NUMFONTS=base.numfonts; PAT_MANIFEST=man;
     PATTERNS=[{id:'none',label:'None'}].concat(Object.keys(PAT_MANIFEST).map(id=>({id,label:PAT_MANIFEST[id].label})));
-    CATS=['All','Stripes','Geometric','Abstract','Camo','Texture'].filter(c=>c==='All'||Object.values(PAT_MANIFEST).some(m=>m.cat===c));
+    CATS=['All'].concat(['Stripes','Hoops','Geometric','Camo','Texture','Solid','Abstract'].filter(c=>Object.values(PAT_MANIFEST).some(m=>m.cat===c)));
     init();
   }catch(e){ console.error(e); const sb=document.getElementById('stepBody'); if(sb) sb.innerHTML='<div style="padding:20px">Could not load the builder. Please refresh.</div>'; }
 }
