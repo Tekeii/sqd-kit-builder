@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SQD Full Kit Builder — Modern Piping</title>
+<style>
+:root{ color-scheme: dark;
+  --bg:#0a0c0b; --surface:#131614; --surface2:#1b1f1d; --line:#2a302c; --neon:#39ff14; --neon-d:#26c40c; --text:#f3f5f3; --muted:#8b938d; }
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; font-size:14px; }
+.kf-head{ display:flex; align-items:center; gap:13px; padding:14px 20px; border-bottom:1px solid var(--line); background:#000; }
+.kf-head img{ height:26px; width:auto; display:block; }
+.kf-head .ti{ display:flex; flex-direction:column; line-height:1.15; border-left:2px solid var(--neon); padding-left:13px; }
+.kf-head h1{ margin:0; font-size:15px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+.kf-head .price{ font-size:13px; font-weight:800; color:var(--neon); }
+.kf-main{ display:grid; grid-template-columns:360px 1fr; min-height:80vh; }
+.kf-left{ border-right:1px solid var(--line); background:var(--surface); display:flex; flex-direction:column; }
+.kf-stepbar{ position:relative; }
+.kf-stepbar::after{ content:'\25BE'; position:absolute; right:20px; top:50%; transform:translateY(-50%); color:var(--neon); pointer-events:none; font-size:13px; }
+.kf-stepbar select{ width:100%; border:none; border-bottom:2px solid var(--neon); padding:15px 18px; font-size:15px; font-weight:800; outline:none; appearance:none; cursor:pointer; background:var(--surface2); color:var(--text); }
+.kf-body{ padding:18px; overflow:auto; flex:1; }
+.kf-confirm{ position:sticky; bottom:0; background:var(--neon); color:#000; text-align:center; padding:15px; cursor:pointer; font-size:17px; font-weight:800; }
+.kf-toolbar{ display:flex; align-items:center; justify-content:center; gap:22px; padding:16px 20px 0; flex-wrap:wrap; }
+.kf-toolbar label{ font-size:12px; font-weight:700; color:var(--muted); display:flex; align-items:center; gap:8px; }
+input[type=range]{ accent-color:var(--neon); }
+input[type=checkbox]{ accent-color:var(--neon); width:18px; height:18px; }
+.kf-preview{ display:flex; flex-wrap:wrap; gap:18px; align-items:flex-start; justify-content:center; padding:16px 24px 24px; }
+.kf-view{ text-align:center; }
+.kf-view canvas{ height:auto; max-width:100%; background:#fff; border:1px solid var(--line); border-radius:12px; cursor:pointer; }
+.kf-hint{ text-align:center; color:var(--muted); font-size:12px; font-weight:600; padding:4px 16px 0; }
+.kf-hint b{ color:var(--neon); font-weight:800; }
+.kf-view .lbl{ margin-top:7px; font-size:11px; font-weight:800; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; }
+.sec-title{ font-size:13px; font-weight:800; margin:2px 0 12px; color:var(--text); }
+.sub-title{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--neon); margin:18px 0 8px; }
+.kf-field{ margin-bottom:14px; }
+.kf-field>label{ display:block; font-size:13px; font-weight:700; color:#cfd4d0; margin-bottom:7px; }
+.kf-color{ display:flex; align-items:center; gap:11px; border:1px solid var(--line); border-radius:10px; padding:11px 12px; cursor:pointer; background:var(--surface2); position:relative; }
+.kf-ring{ width:26px; height:26px; border-radius:50%; padding:2px; background:conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red); flex:0 0 auto; }
+.kf-ring>span{ display:block; width:100%; height:100%; border-radius:50%; border:2px solid var(--surface2); }
+.kf-color .nm{ font-weight:700; } .kf-color .hex{ margin-left:auto; color:var(--muted); font-weight:600; font-size:13px; }
+.kf-input,.kf-select{ width:100%; border:1px solid var(--line); border-radius:10px; padding:11px; font-weight:600; outline:none; background:var(--surface2); color:var(--text); }
+.kf-row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.kf-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.kf-cattabs{ display:flex; flex-wrap:wrap; gap:6px; margin:0 0 12px; }
+.kf-pager{ display:flex; align-items:center; justify-content:center; gap:14px; margin:12px 0 2px; }
+.pgbtn{ border:1px solid var(--line); background:var(--surface2); color:var(--text); border-radius:8px; padding:8px 14px; font-weight:700; cursor:pointer; font-size:13px; }
+.pgbtn:disabled{ opacity:.4; cursor:default; }
+.pginfo{ font-size:12px; font-weight:700; color:var(--muted); }
+.cattab{ border:1px solid var(--line); background:var(--surface2); border-radius:999px; padding:7px 12px; font-size:11px; font-weight:700; cursor:pointer; color:var(--muted); }
+.cattab.on{ background:var(--neon); color:#000; border-color:var(--neon); }
+.qpick{ display:flex; gap:6px; margin:0 0 7px 2px; }
+.qp{ width:22px; height:22px; border-radius:50%; border:1px solid rgba(255,255,255,.22); cursor:pointer; padding:0; }
+.cpop{ position:fixed; z-index:9999; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 12px 34px rgba(0,0,0,.5); padding:10px; width:236px; }
+.cpop-sw{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+.cpsw{ width:100%; aspect-ratio:1/1; border-radius:6px; border:1px solid rgba(255,255,255,.18); cursor:pointer; padding:0; }
+.cpsw.on{ outline:2px solid var(--neon); outline-offset:1px; }
+.cpop-foot{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+.cpcustom{ display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; color:var(--text); }
+.cpcustom input{ width:30px; height:30px; border:none; background:none; padding:0; cursor:pointer; }
+.cphex{ flex:1; min-width:0; border:1px solid var(--line); border-radius:8px; padding:7px 8px; font-weight:700; font-size:12px; text-transform:uppercase; outline:none; background:var(--surface2); color:var(--text); }
+.kf-thumb{ cursor:pointer; text-align:center; }
+.kf-thumb .img{ width:100%; aspect-ratio:1/1; border:1px solid var(--line); border-radius:8px; background:var(--surface2) center/cover no-repeat; display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--muted); overflow:hidden; }
+.kf-thumb .img img{ width:100%; height:100%; object-fit:cover; display:block; }
+.kf-thumb.active .img{ border-color:var(--neon); box-shadow:0 0 0 2px rgba(57,255,20,.35); }
+.kf-thumb span{ display:block; margin-top:4px; font-size:9px; font-weight:700; color:#b8bdb9; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.kf-seg{ display:inline-grid; grid-auto-flow:column; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.kf-seg button{ border:none; background:var(--surface2); color:var(--text); padding:11px 14px; font-weight:700; cursor:pointer; font-size:13px; }
+.kf-seg button.on{ background:var(--neon); color:#000; }
+.kf-seprow{ margin-bottom:8px; }
+.kf-dl{ border:none; background:var(--neon); color:#000; border-radius:10px; padding:12px 20px; font-weight:800; cursor:pointer; font-size:14px; }
+.kf-ghost{ width:100%; border:1px solid var(--neon); color:var(--neon); background:transparent; border-radius:10px; padding:11px; font-weight:800; cursor:pointer; font-size:13px; }
+.modal-bg{ position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:10000; display:none; align-items:flex-start; justify-content:center; overflow:auto; padding:22px 12px; }
+.modal-bg.on{ display:flex; }
+.modal{ background:var(--surface); border:1px solid var(--line); border-radius:16px; width:min(520px,100%); padding:20px; }
+.modal-top{ display:flex; align-items:center; justify-content:space-between; }
+.modal h2{ margin:0; font-size:18px; }
+.omx{ background:none; border:none; color:var(--muted); font-size:24px; line-height:1; cursor:pointer; }
+.modal .mut{ color:var(--muted); font-size:12px; margin:4px 0 16px; }
+.fld{ margin-bottom:12px; }
+.fld label{ display:block; font-size:12px; font-weight:700; color:#cfd4d0; margin-bottom:5px; }
+.fld input,.fld textarea{ width:100%; background:var(--surface2); border:1px solid var(--line); border-radius:9px; padding:10px; color:var(--text); font-weight:600; outline:none; font-family:inherit; }
+.sizes{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+.sizes .sz label{ display:block; font-size:10px; text-align:center; margin-bottom:3px; color:var(--muted); }
+.sizes .sz input{ text-align:center; padding:8px 2px; }
+.spec{ background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:12px; font-size:12px; white-space:pre-wrap; color:#cfd4d0; max-height:170px; overflow:auto; }
+.mbtns{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+.mbtn{ flex:1; min-width:150px; border:none; border-radius:10px; padding:13px; font-weight:800; cursor:pointer; font-size:14px; }
+.mbtn.wa{ background:#25D366; color:#06351a; }
+.mbtn.em{ background:var(--neon); color:#000; }
+.promo{ margin:8px auto 2px; max-width:540px; display:flex; align-items:center; justify-content:center; gap:15px; background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--neon); border-radius:12px; padding:12px 20px; }
+.promo .pp{ font-size:27px; font-weight:800; color:var(--neon); line-height:1; }
+.promo .pt{ display:flex; flex-direction:column; text-align:left; }
+.promo .pt b{ font-size:13px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:var(--text); }
+.promo .pt small{ font-size:12px; color:var(--muted); font-weight:600; margin-top:1px; }
+@media(max-width:860px){
+  .kf-main{ display:flex; flex-direction:column; min-height:0; }
+  .kf-main > section{ order:1; }
+  .kf-left{ order:2; border-right:none; border-top:1px solid var(--line); }
+  .kf-head{ position:sticky; top:0; z-index:50; }
+  .kf-toolbar{ gap:14px; padding:12px 12px 0; }
+  .kf-preview{ padding:12px; gap:12px; }
+  .kf-body{ padding:15px; }
+  .kf-color{ padding:13px 12px; }
+  .kf-seg button{ padding:12px 13px; }
+}
+</style>
+</head>
+<body>
+  <div class="kf-head"><img id="brandLogo" alt="SQD"><div class="ti"><h1>Full Kit Builder</h1></div></div>
+  <div class="kf-main">
+    <aside class="kf-left">
+      <div class="kf-stepbar"><select id="stepSel"></select></div>
+      <div class="kf-body" id="stepBody"></div>
+      <div class="kf-confirm" id="confirmBtn">&#10003;</div>
+    </aside>
+    <section>
+      <div class="kf-toolbar">
+        <div class="kf-seg" id="viewSeg"><button data-v="both" class="on">Both</button><button data-v="front">Front</button><button data-v="back">Back</button></div>
+        <label>Zoom <input type="range" id="zoom" min="240" max="640" value="320"></label>
+      </div>
+      <div class="kf-hint"><b>Tip:</b> click the shirt, shorts, socks or number on the kit to jump to its options</div>
+      <div class="kf-preview">
+        <div class="kf-view" id="viewFront"><canvas id="cFront"></canvas><div class="lbl">Front</div></div>
+        <div class="kf-view" id="viewBack"><canvas id="cBack"></canvas><div class="lbl">Back</div></div>
+      </div>
+      <div class="promo"><span class="pp">£25</span><span class="pt"><b>per full strip</b><small>Shirt, shorts, socks &amp; all printing included</small></span></div>
+      <div style="text-align:center;padding-bottom:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button id="reqQuote" class="kf-dl">Order Form</button><button id="dl" class="kf-dl" style="background:var(--surface2);color:var(--text);border:1px solid var(--line)">Download PNG</button></div>
+    </section>
+  </div>
+<div class="modal-bg" id="orderModal">
+  <div class="modal">
+    <div class="modal-top"><h2>Order Form</h2><button id="omClose" class="omx">&times;</button></div>
+    <div class="mut">Add your details and we'll get a quote back to you. Your kit mockup image downloads automatically so you can attach it to the message.</div>
+    <div class="fld"><label>Your name *</label><input id="ofName" placeholder="Full name"></div>
+    <div class="fld"><label>Email</label><input id="ofEmail" type="email" placeholder="you@email.com"></div>
+    <div class="fld"><label>Phone / WhatsApp</label><input id="ofPhone" placeholder="Mobile number"></div>
+    <div class="fld"><label>Club / team name</label><input id="ofClub" placeholder="e.g. Riverside FC"></div>
+    <div class="fld"><label>Sizes &amp; quantities</label><div class="sizes" id="sizeGrid"></div></div>
+    <div class="fld"><label>Notes (deadline, special requests)</label><textarea id="ofNotes" rows="2" placeholder="Anything else we should know?"></textarea></div>
+    <div class="fld"><label>Design summary</label><div class="spec" id="specBox"></div></div>
+    <div class="mbtns"><button class="mbtn wa" id="sendWA">Send via WhatsApp</button><button class="mbtn em" id="sendEM">Send via Email</button></div>
+  </div>
+</div>
+<script>
+let ASSETS = {};
+let PAT_MANIFEST = {};
+let NUMFONTS = {};
+let CW=560, CH=986;
+const NAMED={'#15284f':'Navy','#ffffff':'White','#ce2030':'Club Red','#111111':'Black','#3d3935':'Dark Shadow','#ffd200':'Gold'};
+const BASE_ZONES=['body','sides','sleeves','cuffs'];
+const TRIM_ZONES=['collar','piping'];
+let PATTERNS=[];
+let CATS=[];
+const STEPS=[{id:'shirt',label:'Shirt'},{id:'shorts',label:'Shorts'},{id:'socks',label:'Socks'},{id:'text',label:'Number'}];
+const SHORT_STYLES=[{id:'plain',label:'Plain'},{id:'stripes',label:'Side Stripes'},{id:'pillar',label:'Side Pillar (pattern)'},{id:'flares',label:'Back Flares'},{id:'pattern',label:'All-over Pattern'}];
+const SOCK_STYLES=[{id:'plain',label:'Plain'},{id:'hoops',label:'Hoops'},{id:'stripes',label:'Stripes'},{id:'topband',label:'Top Band'}];
+const NUM_FONTS={ block:{label:'Block (bold)',css:'900 #px Arial,Helvetica,sans-serif'}, italic:{label:'Italic Block',css:'900 italic #px Arial,sans-serif'}, condensed:{label:'Condensed',css:'900 #px "Arial Narrow",Arial,sans-serif'}, impact:{label:'Impact',css:'#px Impact,"Arial Black",sans-serif'}, serif:{label:'Serif',css:'900 #px Georgia,"Times New Roman",serif'}, rounded:{label:'Rounded',css:'800 #px "Trebuchet MS",Verdana,sans-serif'}, outline:{label:'Outline',css:'900 #px Arial,sans-serif',outline:true} };
+const state={
+  step:'shirt', view:'both', zoom:320,
+  colors:{ body:'#c9ced4', sides:'#aab0b8', sleeves:'#aab0b8', cuffs:'#ffffff', collar:'#ffffff', piping:'#ffffff', socks:'#c9ced4' },
+  pattern:'none', patCat:'All', patSearch:'', patPage:0, patternTarget:'whole', teamColors:['#d2d6db','#ffffff','#9aa1aa','#6e757e','#e6e8eb','#4b525a'],
+  shorts:{ style:'plain', base:'#c9ced4', stripe:'#ffffff', stripe2:'#9aa1aa', pillarBorder:'#6e757e', flareL:'#9aa1aa', flareR:'#6e757e', flarePattern:false },
+  sock:{ style:'plain', base:'#c9ced4', accent:'#ffffff', accent2:'#9aa1aa' },
+  logo:{ shirtPos:'chest', shirtColor:'#ffffff', shortsColor:'#ffffff', socksColor:'#ffffff' },
+  club:{ src:null, img:null, removeWhite:true, pos:'center', size:1 },
+  number:'9', numberX:280, numberY:180, numberSize:135, numberFont:'block', numberColor:'#ffffff', outline:'#15284f', whiteBg:true,
+};
+
+const imgCache={};
+const TC=(i)=>state.teamColors[i]||'#9aa1aa';
+function panelColor(z){ return (z==='sides'||z==='sleeves')?TC(1):((z==='cuffs'||z==='collar'||z==='piping')?TC(2):TC(0)); }
+const loadImg=src=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src;});
+async function asset(k){ if(!(k in imgCache)) imgCache[k]=ASSETS[k]?await loadImg(ASSETS[k]):null; return imgCache[k]; }
+
+async function fillZone(ctx, side, zone, color){
+  const m=await asset('mp_'+side+'_'+zone); if(!m) return;
+  const o=document.createElement('canvas'); o.width=CW; o.height=CH; const oc=o.getContext('2d');
+  oc.fillStyle=color; oc.fillRect(0,0,CW,CH); oc.globalCompositeOperation='destination-in'; oc.drawImage(m,0,0,CW,CH);
+  ctx.drawImage(o,0,0);
+}
+const boxCache={};
+async function maskBox(side, zones, key){
+  const ck=side+':'+key; if(boxCache[ck]) return boxCache[ck];
+  const c=document.createElement('canvas'); c.width=CW; c.height=CH; const x=c.getContext('2d');
+  for(const z of zones){ const m=await asset('mp_'+side+'_'+z); if(m) x.drawImage(m,0,0,CW,CH); }
+  const d=x.getImageData(0,0,CW,CH).data; let x0=CW,y0=CH,x1=0,y1=0,f=false;
+  for(let yy=0;yy<CH;yy++)for(let xx=0;xx<CW;xx++){ if(d[(yy*CW+xx)*4+3]>20){ f=true; if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(yy<y0)y0=yy;if(yy>y1)y1=yy; } }
+  boxCache[ck]= f?{x:x0,y:y0,w:x1-x0,h:y1-y0}:{x:0,y:0,w:CW,h:CH}; return boxCache[ck];
+}
+const shirtBox=(side)=>maskBox(side,['body','sides','sleeves','cuffs'],'shirt');
+
+// generic pattern image cover-fit to box, optionally clipped
+async function patternImage(side, box, clipCanvas){
+  const pid=state.pattern; if(pid==='none') return null;
+  await ensurePat(pid);
+  const man=PAT_MANIFEST[pid]; const sh=await asset('pat_'+pid+'_sh'); if(!sh) return null;
+  const s=Math.max(box.w/sh.width, box.h/sh.height); const dw=sh.width*s, dh=sh.height*s;
+  const dx=box.x+(box.w-dw)/2, dy=box.y+(box.h-dh)/2;
+  const pal=state.teamColors;
+  const off=document.createElement('canvas'); off.width=CW; off.height=CH; const o=off.getContext('2d');
+  { const t=document.createElement('canvas'); t.width=CW; t.height=CH; const tc=t.getContext('2d');
+    tc.fillStyle=pal[0]||'#808080'; tc.fillRect(dx,dy,dw,dh);
+    tc.globalCompositeOperation='multiply'; tc.drawImage(sh,dx,dy,dw,dh); o.drawImage(t,0,0); }
+  for(let i=1;i<man.slots;i++){ const m=await asset('pat_'+pid+'_'+i); if(!m) continue;
+    const t=document.createElement('canvas'); t.width=CW; t.height=CH; const tc=t.getContext('2d');
+    tc.fillStyle=pal[i]||'#808080'; tc.fillRect(0,0,CW,CH);
+    tc.globalCompositeOperation='multiply'; tc.drawImage(sh,dx,dy,dw,dh);
+    tc.globalCompositeOperation='destination-in'; tc.drawImage(m,dx,dy,dw,dh);
+    o.drawImage(t,0,0); }
+  if(clipCanvas){ o.globalCompositeOperation='destination-in'; o.drawImage(clipCanvas,0,0); o.globalCompositeOperation='source-over'; }
+  return off;
+}
+async function drawShirtPattern(ctx, side){
+  if(state.pattern==='none') return;
+  const box=await shirtBox(side);
+  const clip=document.createElement('canvas'); clip.width=CW; clip.height=CH; const cc=clip.getContext('2d');
+  const tgt=state.patternTarget;
+  if(tgt==='body'){
+    const bm=await asset('mp_'+side+'_body'); if(bm) cc.drawImage(bm,0,0,CW,CH);
+    cc.globalCompositeOperation='destination-out';
+    for(const z of ['sleeves','sides','cuffs']){ const m=await asset('mp_'+side+'_'+z); if(m) cc.drawImage(m,0,0,CW,CH); }
+    cc.globalCompositeOperation='source-over';
+  } else if(tgt==='sleeves'){
+    for(const z of ['sleeves','cuffs']){ const m=await asset('mp_'+side+'_'+z); if(m) cc.drawImage(m,0,0,CW,CH); }
+  } else {
+    for(const z of ['body','sides','sleeves','cuffs']){ const m=await asset('mp_'+side+'_'+z); if(m) cc.drawImage(m,0,0,CW,CH); }
+  }
+  const pat=await patternImage(side, box, clip); if(pat) ctx.drawImage(pat,0,0);
+}
+async function legBoxes(side){
+  return { L: await maskBox(side,['shortsleg_left'],'legL'), R: await maskBox(side,['shortsleg_right'],'legR') };
+}
+function eachLeg(legs){ return [legs.L, legs.R]; }
+function outerEdge(lg){ const cx=lg.x+lg.w/2; return cx>CW/2 ? {x:lg.x+lg.w, dir:-1} : {x:lg.x, dir:1}; }
+async function drawShorts(ctx, side){
+  await fillZone(ctx, side, 'shorts', state.shorts.base);
+  const st=state.shorts.style; if(st==='plain') return;
+  const shortsMask=await asset('mp_'+side+'_shorts');
+  const sbox=await maskBox(side,['shorts'],'shorts');
+  if(st==='pattern'){ const pat=await patternImage(side, sbox, await maskCanvas(side,['shorts'])); if(pat) ctx.drawImage(pat,0,0); return; }
+  const legs=await legBoxes(side);
+  const off=document.createElement('canvas'); off.width=CW; off.height=CH; const o=off.getContext('2d');
+  if(st==='stripes'){
+    for(const lg of eachLeg(legs)){ const e=outerEdge(lg); const cx=e.x+e.dir*14;
+      for(const grp of [[-9,'stripe',3],[0,'stripe2',5],[9,'stripe',3]]){ o.fillStyle=state.shorts[grp[1]]; o.fillRect(cx+grp[0]-grp[2], lg.y-20, grp[2]*2, lg.h+48); } }
+    o.globalCompositeOperation='destination-in'; o.drawImage(shortsMask,0,0,CW,CH); ctx.drawImage(off,0,0);
+  } else if(st==='pillar'){
+    const bw=18; const band=document.createElement('canvas'); band.width=CW; band.height=CH; const bd=band.getContext('2d');
+    const bord=document.createElement('canvas'); bord.width=CW; bord.height=CH; const bc=bord.getContext('2d');
+    for(const lg of eachLeg(legs)){ const e=outerEdge(lg); const x0=Math.min(e.x,e.x+e.dir*bw), x1=Math.max(e.x,e.x+e.dir*bw);
+      bd.fillStyle='#fff'; bd.fillRect(x0, lg.y-25, x1-x0, lg.h+52);
+      const ix=e.x+e.dir*bw; bc.fillStyle=state.shorts.pillarBorder; bc.fillRect(Math.min(ix,ix+e.dir*5), lg.y-25, 5, lg.h+52); }
+    bd.globalCompositeOperation='destination-in'; bd.drawImage(shortsMask,0,0,CW,CH);
+    bc.globalCompositeOperation='destination-in'; bc.drawImage(shortsMask,0,0,CW,CH);
+    if(state.pattern!=='none'){ const pat=await patternImage(side, sbox, band); if(pat) ctx.drawImage(pat,0,0); }
+    else { o.fillStyle=state.shorts.stripe2; o.fillRect(0,0,CW,CH); o.globalCompositeOperation='destination-in'; o.drawImage(band,0,0); ctx.drawImage(off,0,0); }
+    ctx.drawImage(bord,0,0);
+  } else if(st==='flares'){
+    const fh = side==='back'?1.0:0.5;
+    for(const lg of eachLeg(legs)){ const e=outerEdge(lg); const xo=e.x, dir=e.dir; const col=(lg===legs.L)?state.shorts.flareL:state.shorts.flareR; const Hh=lg.h*fh;
+      o.fillStyle=col; o.beginPath(); o.moveTo(xo, lg.y-10); o.lineTo(xo+dir*lg.w*0.62, lg.y-10);
+      o.quadraticCurveTo(xo+dir*lg.w*0.30, lg.y+Hh*0.55, xo+dir*lg.w*0.10, lg.y+Hh+12); o.lineTo(xo, lg.y+Hh+12); o.closePath(); o.fill(); }
+    o.globalCompositeOperation='destination-in'; o.drawImage(shortsMask,0,0,CW,CH);
+    if(state.shorts.flarePattern && state.pattern!=='none'){ const pat=await patternImage(side, sbox, off); if(pat) ctx.drawImage(pat,0,0); else ctx.drawImage(off,0,0); }
+    else ctx.drawImage(off,0,0);
+  }
+}
+async function drawSocks(ctx, side){
+  await fillZone(ctx, side, 'socks', state.sock.base);
+  const st=state.sock.style; if(st==='plain') return;
+  const mask=await asset('mp_'+side+'_socks'); const box=await maskBox(side,['socks'],'socks');
+  const off=document.createElement('canvas'); off.width=CW; off.height=CH; const o=off.getContext('2d');
+  const top=box.y+box.h*0.07;
+  if(st==='hoops'){ const region=box.h*0.34, n=3, g=region/(n*2-0.5); o.fillStyle=state.sock.accent;
+    for(let i=0;i<n;i++){ o.fillRect(0, top+i*2*g, CW, g); } }
+  else if(st==='stripes'){ const sw=14, gap=22; o.fillStyle=state.sock.accent;
+    for(let x=box.x-gap; x<box.x+box.w+sw; x+=sw+gap){ o.fillRect(x, top, sw, box.h*0.85); } }
+  else if(st==='topband'){ const region=box.h*0.20; o.fillStyle=state.sock.accent; o.fillRect(0, top, CW, region*0.8);
+    o.fillStyle=state.sock.accent2; o.fillRect(0, top+region*0.84, CW, region*0.16); }
+  o.globalCompositeOperation='destination-in'; o.drawImage(mask,0,0,CW,CH); ctx.drawImage(off,0,0);
+}
+async function maskCanvas(side, zones){ const c=document.createElement('canvas'); c.width=CW; c.height=CH; const x=c.getContext('2d');
+  for(const z of zones){ const m=await asset('mp_'+side+'_'+z); if(m) x.drawImage(m,0,0,CW,CH); } return c; }
+
+function glyphPath(fid,d){ const man=NUMFONTS[fid]; if(!man||!man.g[d]) return null; const gd=man.g[d]; const p=new Path2D();
+  for(const c of gd.paths){ const pts=c.p; if(pts.length<2) continue; p.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) p.lineTo(pts[i][0],pts[i][1]); p.closePath(); }
+  return {path:p, w:gd.w}; }
+async function drawNumber(ctx){
+  if(!state.number) return; const man=NUMFONTS[state.numberFont]; if(!man) return;
+  const size=state.numberSize, gap=size*0.06;
+  const items=[...state.number].map(d=>glyphPath(state.numberFont,d)).filter(Boolean); if(!items.length) return;
+  const widths=items.map(it=>it.w*size);
+  const total=widths.reduce((a,b)=>a+b,0)+gap*(items.length-1);
+  let cx=state.numberX-total/2; const top=state.numberY-size/2; const ow=Math.max(2,size*0.05);
+  for(let i=0;i<items.length;i++){ const it=items[i];
+    ctx.save(); ctx.translate(cx, top); ctx.scale(size,size); ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.lineWidth=ow/size; ctx.strokeStyle=state.outline; ctx.stroke(it.path);
+    ctx.fillStyle=state.numberColor; ctx.fill(it.path,'evenodd');
+    ctx.restore(); cx+=widths[i]+gap; }
+}
+let _clubCache={};
+async function clubImage(){ const s=state.club.img; if(!s) return null; if(_clubCache.s!==s){ _clubCache.s=s; _clubCache.img=await loadImg(s); } return _clubCache.img; }
+async function processClub(){
+  if(!state.club.src){ state.club.img=null; return; }
+  if(!state.club.removeWhite){ state.club.img=state.club.src; return; }
+  const img=await loadImg(state.club.src); if(!img){ state.club.img=state.club.src; return; }
+  const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; const x=c.getContext('2d');
+  x.drawImage(img,0,0); const d=x.getImageData(0,0,c.width,c.height); const a=d.data; const W=c.width,H=c.height;
+  const sample=(px,py)=>{ let r=0,g=0,bl=0,n=0; for(let yy=py-2;yy<=py+2;yy++)for(let xx=px-2;xx<=px+2;xx++){ const X=Math.min(W-1,Math.max(0,xx)),Y=Math.min(H-1,Math.max(0,yy)),i=(Y*W+X)*4; if(a[i+3]<10)continue; r+=a[i];g+=a[i+1];bl+=a[i+2];n++; } return n?[r/n,g/n,bl/n]:null; };
+  const cs=[sample(2,2),sample(W-3,2),sample(2,H-3),sample(W-3,H-3)].filter(Boolean);
+  if(!cs.length){ state.club.img=state.club.src; return; }
+  const bg=[0,1,2].map(k=>cs.reduce((s,v)=>s+v[k],0)/cs.length); const TH=62;
+  for(let i=0;i<a.length;i+=4){ const dr=a[i]-bg[0],dg=a[i+1]-bg[1],db=a[i+2]-bg[2]; if(Math.sqrt(dr*dr+dg*dg+db*db)<TH) a[i+3]=0; }
+  x.putImageData(d,0,0); state.club.img=c.toDataURL('image/png');
+}
+async function applyClubColours(){
+  const img=await clubImage(); if(!img){ alert('Upload a club logo first.'); return; }
+  const W=Math.min(img.width,180), H=Math.max(1,Math.round(img.height*(W/img.width)));
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'); x.drawImage(img,0,0,W,H);
+  const d=x.getImageData(0,0,W,H).data; const buckets={};
+  for(let i=0;i<d.length;i+=4){ if(d[i+3]<128) continue; const r=d[i],g=d[i+1],b=d[i+2];
+    const key=(r>>4)+'_'+(g>>4)+'_'+(b>>4); const bk=buckets[key]||(buckets[key]={n:0,r:0,g:0,b:0}); bk.n++; bk.r+=r; bk.g+=g; bk.b+=b; }
+  let arr=Object.values(buckets).map(bk=>({n:bk.n,r:bk.r/bk.n,g:bk.g/bk.n,b:bk.b/bk.n})).sort((a,b)=>b.n-a.n);
+  const picked=[]; for(const col of arr){ if(picked.length>=3) break; if(!picked.some(p=>Math.abs(p.r-col.r)+Math.abs(p.g-col.g)+Math.abs(p.b-col.b)<70)) picked.push(col); }
+  const hx=v=>'#'+[v.r,v.g,v.b].map(n=>Math.round(n).toString(16).padStart(2,'0')).join('');
+  for(let i=0;i<picked.length;i++) state.teamColors[i]=hx(picked[i]);
+  renderStep(); renderAll(); refreshThumbs();
+}
+async function drawClub(ctx, side){
+  if(side!=='front' || !state.club.img) return; const img=await clubImage(); if(!img) return;
+  const sb=await shirtBox(side);
+  let cx,cy,w;
+  if(state.logo.shirtPos==='center'){ cx=sb.x+sb.w*0.5; cy=sb.y+sb.h*0.37-20; w=sb.w*0.19; }
+  else { cx=sb.x+sb.w*0.645; cy=sb.y+sb.h*0.30; w=sb.w*0.16; }
+  let hh=img.height*(w/img.width); ctx.drawImage(img, cx-w/2, cy-hh/2, w, hh);
+  const legs=await legBoxes(side); const lg=legs.R;
+  if(lg.w>4){ const sw=lg.w*0.42*state.club.size, sh=img.height*(sw/img.width); ctx.drawImage(img, lg.x+lg.w*0.40-sw/2, lg.y+lg.h*0.80-sh/2, sw, sh); }
+  const skb=await maskBox(side,['socks'],'socks');
+  if(skb.w>4){ const kw=skb.w*0.17, kh=img.height*(kw/img.width);
+    ctx.drawImage(img, skb.x+skb.w*0.149-kw/2, skb.y+skb.h*0.55-kh/2, kw, kh);
+    ctx.drawImage(img, skb.x+skb.w*0.847-kw/2, skb.y+skb.h*0.55-kh/2, kw, kh); }
+}
+async function logoMark(ctx, cx, cy, w, color){
+  const img=await asset('logo_sqd');
+  if(img){ const hh=img.height*(w/img.width); const t=document.createElement('canvas'); t.width=Math.max(1,Math.ceil(w)); t.height=Math.max(1,Math.ceil(hh)); const tc=t.getContext('2d');
+    tc.drawImage(img,0,0,w,hh); tc.globalCompositeOperation='source-in'; tc.fillStyle=color; tc.fillRect(0,0,t.width,t.height);
+    ctx.drawImage(t, cx-w/2, cy-hh/2); }
+  else { ctx.save(); ctx.fillStyle=color; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='900 100px Arial,"Arial Black",sans-serif'; const m=ctx.measureText('SQD').width; const sx=w/m;
+    ctx.translate(cx,cy); ctx.scale(sx,sx); ctx.fillText('SQD',0,0); ctx.restore(); }
+}
+async function drawLogo(ctx, side){
+  if(side!=='front') return;
+  const L=state.logo; const sb=await shirtBox(side);
+  if(L.shirtPos==='center') await logoMark(ctx, sb.x+sb.w*0.5, sb.y+sb.h*0.21, sb.w*0.17, L.shirtColor);
+  else await logoMark(ctx, sb.x+sb.w*0.355, sb.y+sb.h*0.30, sb.w*0.17, L.shirtColor);
+  const legs=await legBoxes(side); const lg=legs.L;
+  if(lg.w>4) await logoMark(ctx, lg.x+lg.w*0.60, lg.y+lg.h*0.80, lg.w*0.40, L.shortsColor);
+  const skb=await maskBox(side,['socks'],'socks');
+  if(skb.w>4){ await logoMark(ctx, skb.x+skb.w*0.149, skb.y+skb.h*0.27, skb.w*0.17, L.socksColor);
+               await logoMark(ctx, skb.x+skb.w*0.847, skb.y+skb.h*0.27, skb.w*0.17, L.socksColor); }
+}
+async function renderSide(canvas, side){
+  canvas.width=CW; canvas.height=CH; const ctx=canvas.getContext('2d');
+  ctx.imageSmoothingQuality='high'; ctx.clearRect(0,0,CW,CH);
+  if(state.whiteBg){ ctx.fillStyle='#fff'; ctx.fillRect(0,0,CW,CH); }
+  for(const z of BASE_ZONES){ await fillZone(ctx, side, z, panelColor(z)); }
+  await drawShirtPattern(ctx, side);
+  for(const z of TRIM_ZONES){ await fillZone(ctx, side, z, panelColor(z)); }
+  await drawShorts(ctx, side);
+  await drawSocks(ctx, side);
+  const sh=await asset('mp_'+side+'_shadows'); if(sh){ ctx.globalCompositeOperation='multiply'; ctx.drawImage(sh,0,0,CW,CH); ctx.globalCompositeOperation='source-over'; }
+  const hi=await asset('mp_'+side+'_highlights'); if(hi){ ctx.globalCompositeOperation='screen'; ctx.drawImage(hi,0,0,CW,CH); ctx.globalCompositeOperation='source-over'; }
+  await drawLogo(ctx, side);
+  await drawClub(ctx, side);
+  if(side==='back') await drawNumber(ctx);
+}
+let q=false;
+function renderAll(){ if(q)return; q=true; requestAnimationFrame(async()=>{ q=false; await renderSide(document.getElementById('cFront'),'front'); await renderSide(document.getElementById('cBack'),'back'); }); }
+function applyView(){
+  document.getElementById('viewFront').style.display=(state.view==='back')?'none':'';
+  document.getElementById('viewBack').style.display=(state.view==='front')?'none':'';
+  document.getElementById('cFront').style.width=state.zoom+'px'; document.getElementById('cBack').style.width=state.zoom+'px';
+}
+
+const thumbCache={};
+async function patThumb(pid){
+  if(pid==='none') return null; if(thumbCache[pid]) return thumbCache[pid];
+  const man=PAT_MANIFEST[pid]; const sh=await asset('pat_'+pid+'_sh');
+  const c=document.createElement('canvas'); c.width=sh.width; c.height=sh.height; const x=c.getContext('2d');
+  x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); const pal=state.teamColors;
+  for(let i=0;i<man.slots;i++){ const m=await asset('pat_'+pid+'_'+i);
+    const t=document.createElement('canvas'); t.width=c.width; t.height=c.height; const tc=t.getContext('2d');
+    tc.fillStyle=pal[i]; tc.fillRect(0,0,c.width,c.height); tc.globalCompositeOperation='multiply'; tc.drawImage(sh,0,0);
+    tc.globalCompositeOperation='destination-in'; tc.drawImage(m,0,0); x.drawImage(t,0,0); }
+  thumbCache[pid]=c.toDataURL(); return thumbCache[pid];
+}
+
+function hexName(h){ return NAMED[(h||'').toLowerCase()]||h.toUpperCase(); }
+function colorRow(label,key){ const v=state.colors[key];
+  return `<div class="kf-field"><label>${label}</label><div class="kf-color" data-z="${key}">
+    <span class="kf-ring"><span style="background:${v}"></span></span><span class="nm">${hexName(v)}</span><span class="hex">${v.toUpperCase()}</span>
+    <input type="color" value="${v}" style="position:absolute;opacity:0;width:0;height:0"></div></div>`; }
+function pickChips(scope,key){ return '<div class="qpick">'+[0,1,2].map(i=>'<button class="qp" type="button" data-qp="'+scope+'|'+key+'|'+i+'" title="'+['Primary','Secondary','Third'][i]+'" style="background:'+TC(i)+'"></button>').join('')+'</div>'; }
+function wireChips(root){ root.querySelectorAll('[data-qp]').forEach(btn=>btn.onclick=ev=>{ ev.stopPropagation(); const p=btn.dataset.qp.split('|'),sc=p[0],key=p[1],i=+p[2],col=TC(i); if(sc==='s') state.shorts[key]=col; else state.sock[key]=col; const row=root.querySelector('[data-'+sc+'="'+key+'"]'); if(row) updateRow(row,col); renderAll(); }); }
+function colorRowS(label,key){ const v=state.shorts[key];
+  return `<div class="kf-field"><label>${label}</label>${pickChips('s',key)}<div class="kf-color" data-s="${key}">
+    <span class="kf-ring"><span style="background:${v}"></span></span><span class="nm">${hexName(v)}</span><span class="hex">${v.toUpperCase()}</span>
+    <input type="color" value="${v}" style="position:absolute;opacity:0;width:0;height:0"></div></div>`; }
+function wireColors(root){
+  root.querySelectorAll('[data-z]').forEach(row=>{ const key=row.dataset.z;
+    row.onclick=()=>openColorPicker(row, state.colors[key], c=>{ state.colors[key]=c; updateRow(row,c); renderAll(); }); });
+  root.querySelectorAll('[data-s]').forEach(row=>{ const key=row.dataset.s;
+    row.onclick=()=>openColorPicker(row, state.shorts[key], c=>{ state.shorts[key]=c; updateRow(row,c); renderAll(); }); });
+}
+function updateRow(row,v){ row.querySelector('.kf-ring>span').style.background=v; row.querySelector('.nm').textContent=hexName(v); row.querySelector('.hex').textContent=v.toUpperCase(); }
+const SWATCHES=['#ffffff','#d2d6db','#9aa1aa','#5b6168','#2b2f36','#111111','#0a1f44','#15284f','#1d4ed8','#2f80ed','#56ccf2','#0ea5b7','#0e7a5f','#1f9d55','#27ae60','#a3e635','#fde047','#f2c94c','#f59e0b','#ea580c','#eb5757','#c0392b','#9b2226','#7b1fa2','#db2777','#f8c8d8','#8d5524','#5c4033'];
+let _cpop;
+function ensurePop(){ if(_cpop) return _cpop; const d=document.createElement('div'); d.className='cpop'; d.style.display='none';
+  d.innerHTML='<div class="cpop-sw">'+SWATCHES.map(c=>'<button class="cpsw" type="button" data-c="'+c+'" style="background:'+c+'"></button>').join('')+'</div>'
+    +'<div class="cpop-foot"><label class="cpcustom">Custom<input type="color" id="cpNative"></label><input type="text" id="cpHex" class="cphex" spellcheck="false"></div>';
+  document.body.appendChild(d); _cpop=d; return d; }
+function openColorPicker(anchor, hex, onPick){ const d=ensurePop(); hex=hex||'#ffffff';
+  const setUI=c=>{ d.querySelector('#cpNative').value=c; d.querySelector('#cpHex').value=c.toUpperCase(); d.querySelectorAll('.cpsw').forEach(b=>b.classList.toggle('on', b.dataset.c.toLowerCase()===c.toLowerCase())); };
+  const pick=c=>{ onPick(c); setUI(c); };
+  setUI(hex);
+  d.querySelectorAll('.cpsw').forEach(b=>b.onclick=()=>pick(b.dataset.c));
+  d.querySelector('#cpNative').oninput=e=>pick(e.target.value);
+  d.querySelector('#cpHex').onchange=e=>{ let v=e.target.value.trim(); if(v[0]!=='#')v='#'+v; if(/^#[0-9a-fA-F]{6}$/.test(v)) pick(v); };
+  const r=anchor.getBoundingClientRect(); d.style.display='block';
+  d.style.left=Math.max(8,Math.min(r.left, window.innerWidth-d.offsetWidth-8))+'px';
+  d.style.top=Math.min(r.bottom+6, window.innerHeight-d.offsetHeight-8)+'px';
+  setTimeout(()=>{ const close=ev=>{ if(!d.contains(ev.target) && !anchor.contains(ev.target) && ev.target!==anchor){ d.style.display='none'; document.removeEventListener('mousedown',close); } }; document.addEventListener('mousedown',close); },0);
+}
+function colorRow2(cid,label,hex){ return '<div class="kf-field"><label>'+label+'</label><div class="kf-color" data-cg="'+cid+'"><span class="kf-ring"><span style="background:'+hex+'"></span></span><span class="nm">'+hexName(hex)+'</span><span class="hex">'+hex.toUpperCase()+'</span></div></div>'; }
+function wireCG(root,cid,get,set,after){ const row=root.querySelector('[data-cg="'+cid+'"]'); if(!row)return; row.onclick=()=>openColorPicker(row,get(),function(c){ set(c); updateRow(row,c); renderAll(); if(after)after(); }); }
+
+function clubSection(){
+  let h='<div class="sub-title">Club logo</div>'
+    +'<div class="kf-field"><button id="clubUp" type="button" style="width:100%;border:1px dashed var(--line);border-radius:10px;padding:11px;font-weight:700;background:var(--surface2);color:var(--text);cursor:pointer">Upload club logo</button><input type="file" id="clubFile" accept="image/*" style="display:none"></div>';
+  if(state.club.src){
+    h+='<div class="kf-field"><label class="kf-color" style="cursor:default;justify-content:space-between"><span>Remove background (auto)</span><input type="checkbox" id="clubRW" '+(state.club.removeWhite?'checked':'')+'></label></div>'
+      +'<div class="kf-field"><button id="clubApplyCol" type="button" class="kf-ghost">Apply logo colours to kit</button></div>'
+      +'<div class="kf-field"><span style="color:#8b938d;font-weight:600;font-size:12px">Position follows the SQD logo &mdash; opposite chest, or centred when SQD is centred.</span></div>'
+      +'<div class="kf-field"><button id="clubRemove" type="button" style="width:100%;border:1px solid #5a3030;color:#ff8a8a;border-radius:10px;padding:9px;font-weight:700;background:transparent;cursor:pointer">Remove club logo</button></div>';
+  }
+  return h;
+}
+function saveClub(){ try{ if(state.club.src) localStorage.setItem('sqd_club', JSON.stringify({src:state.club.src, removeWhite:state.club.removeWhite})); else localStorage.removeItem('sqd_club'); }catch(e){} }
+function restoreClub(){ try{ const s=JSON.parse(localStorage.getItem('sqd_club')||'null'); if(s&&s.src){ state.club.src=s.src; state.club.removeWhite=s.removeWhite!==false; } }catch(e){} }
+function wireClub(b){
+  const up=b.querySelector('#clubUp'); if(!up)return;
+  up.onclick=()=>b.querySelector('#clubFile').click();
+  b.querySelector('#clubFile').onchange=e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{ state.club.src=rd.result; processClub().then(()=>{ saveClub(); renderStep(); renderAll(); }); }; rd.readAsDataURL(f); };
+  if(state.club.src){
+    b.querySelector('#clubRW').onchange=e=>{ state.club.removeWhite=e.target.checked; processClub().then(()=>{ saveClub(); renderAll(); }); };
+    const _ac=b.querySelector('#clubApplyCol'); if(_ac) _ac.onclick=()=>applyClubColours();
+    b.querySelector('#clubRemove').onclick=()=>{ state.club={src:null,img:null,removeWhite:true,pos:'center',size:1}; saveClub(); renderStep(); renderAll(); };
+  }
+}
+const PER_PAGE=24;
+function buildPatGrid(){
+  const grid=document.getElementById('patGrid'); if(!grid) return;
+  const q=(state.patSearch||'').toLowerCase().trim();
+  const list=PATTERNS.filter(p=> (p.id==='none'|| state.patCat==='All' || (PAT_MANIFEST[p.id]&&PAT_MANIFEST[p.id].cat===state.patCat)) && (!q|| p.id==='none' || p.label.toLowerCase().includes(q)));
+  const pages=Math.max(1,Math.ceil(list.length/PER_PAGE));
+  if(state.patPage>=pages) state.patPage=0;
+  grid.innerHTML='';
+  list.slice(state.patPage*PER_PAGE,(state.patPage+1)*PER_PAGE).forEach(p=>{
+    const div=document.createElement('div'); div.className='kf-thumb'+(state.pattern===p.id?' active':''); div.dataset.p=p.id;
+    div.innerHTML=`<div class="img">${p.id==='none'?'None':'<img loading="lazy" src="assets/thumbs/'+p.id+'.jpg" alt="">'}</div><span>${p.label}</span>`;
+    div.onclick=()=>{ state.pattern=p.id; renderStep(); renderAll(); };
+    grid.appendChild(div);
+  });
+  const pg=document.getElementById('patPager'); if(!pg) return;
+  if(pages<=1){ pg.innerHTML=''; return; }
+  pg.innerHTML='<button class="pgbtn" data-pg="p"'+(state.patPage===0?' disabled':'')+'>\u2039 Prev</button>'
+    +'<span class="pginfo">Page '+(state.patPage+1)+' / '+pages+' \u00b7 '+list.length+' designs</span>'
+    +'<button class="pgbtn" data-pg="n"'+(state.patPage>=pages-1?' disabled':'')+'>Next \u203a</button>';
+  const pv=pg.querySelector('[data-pg=p]'), nx=pg.querySelector('[data-pg=n]');
+  if(pv) pv.onclick=()=>{ if(state.patPage>0){ state.patPage--; buildPatGrid(); } };
+  if(nx) nx.onclick=()=>{ if(state.patPage<pages-1){ state.patPage++; buildPatGrid(); } };
+}
+function renderStep(){
+  const b=document.getElementById('stepBody'); const s=state.step;
+  if(s==='shirt'){
+    b.innerHTML='<div class="sec-title">Design</div>'
+      +'<div class="kf-cattabs" id="catTabs">'+CATS.map(c=>'<button class="cattab'+(state.patCat===c?' on':'')+'" data-cat="'+c+'">'+c+'</button>').join('')+'</div>'
+      +'<input id="patSearch" class="kf-input" placeholder="Search designs\u2026 e.g. Barcelona" style="margin-bottom:10px" value="'+(state.patSearch||'')+'">'
+      +'<div class="kf-grid" id="patGrid"></div><div class="kf-pager" id="patPager"></div>'+clubSection()+'<div id="patOpts"></div>'
+      +'<div class="sub-title">SQD logo</div>'
+      +'<div class="kf-field"><label>Position</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr"><button data-lp="chest" class="'+(state.logo.shirtPos==='chest'?'on':'')+'">Right chest</button><button data-lp="center" class="'+(state.logo.shirtPos==='center'?'on':'')+'">Higher &amp; centred</button></div></div>'
+      +colorRow2('lgShirt','Logo colour',state.logo.shirtColor);
+    b.querySelectorAll('#catTabs button').forEach(btn=>btn.onclick=()=>{ state.patCat=btn.dataset.cat; state.patPage=0; b.querySelectorAll('#catTabs button').forEach(z=>z.classList.toggle('on',z.dataset.cat===state.patCat)); buildPatGrid(); });
+    const si=b.querySelector('#patSearch'); if(si) si.oninput=e=>{ state.patSearch=e.target.value; state.patPage=0; buildPatGrid(); };
+    buildPatGrid();
+    renderPatOpts(b.querySelector('#patOpts'));
+    b.querySelectorAll('[data-lp]').forEach(btn=>btn.onclick=()=>{ state.logo.shirtPos=btn.dataset.lp; renderStep(); renderAll(); });
+    wireCG(b,'lgShirt',()=>state.logo.shirtColor,c=>state.logo.shirtColor=c);
+    wireClub(b);
+  }
+  else if(s==='shorts'){ renderShortsStep(b); }
+  else if(s==='socks'){ renderSocksStep(b); }
+  else if(s==='text'){
+    b.innerHTML='<div class="sec-title">Number (back)</div>'
+      +'<div class="kf-field"><label>Number</label><input class="kf-input" id="no" value="'+state.number+'" maxlength="2"></div>'
+      +'<div class="kf-field"><label>Font</label><select class="kf-select" id="nfont">'+Object.keys(NUMFONTS).map(k=>`<option value="${k}" ${state.numberFont===k?'selected':''}>${NUMFONTS[k].label}</option>`).join('')+'</select></div>'
+      +'<div class="kf-field"><label>Size <span id="nsv">'+state.numberSize+'</span></label><input type="range" id="nsize" min="50" max="260" value="'+state.numberSize+'"></div>'
+      +colorRow2('numCol','Number colour',state.numberColor)
+      +colorRow2('numOut','Outline',state.outline)
+      +'<div class="kf-field"><span style="color:#6b7280;font-weight:600;font-size:12px">Drag the number on the BACK view to position it.</span></div>';
+    b.querySelector('#no').oninput=e=>{state.number=e.target.value.replace(/[^0-9]/g,'');renderAll();};
+    b.querySelector('#nfont').onchange=e=>{state.numberFont=e.target.value;renderAll();};
+    b.querySelector('#nsize').oninput=e=>{state.numberSize=+e.target.value;b.querySelector('#nsv').textContent=e.target.value;renderAll();};
+    wireCG(b,'numCol',()=>state.numberColor,c=>state.numberColor=c);
+    wireCG(b,'numOut',()=>state.outline,c=>state.outline=c);
+  }
+}
+let _thumbT;
+function refreshThumbs(){}
+function renderPatOpts(wrap){
+  const names=['Primary','Secondary','Third','Fourth','Fifth','Sixth']; let h='';
+  if(state.pattern!=='none'){
+    h+='<div class="kf-field" style="margin-top:16px"><label>Apply pattern to</label>'
+      +'<div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr 1fr"><button data-ap="whole" class="'+(state.patternTarget==='whole'?'on':'')+'">Whole shirt</button><button data-ap="body" class="'+(state.patternTarget==='body'?'on':'')+'">Main body</button><button data-ap="sleeves" class="'+(state.patternTarget==='sleeves'?'on':'')+'">Just sleeves</button></div></div>';
+  }
+  const n=state.pattern==='none'?3:Math.max(3,PAT_MANIFEST[state.pattern].slots);
+  h+='<div class="sub-title">Kit colours</div>';
+  for(let i=0;i<n;i++){ const c=state.teamColors[i]||'#9aa1aa'; h+='<div class="kf-seprow"><div class="kf-color" data-ti="'+i+'"><span class="kf-ring"><span style="background:'+c+'"></span></span><span class="nm">'+names[i]+'</span><span class="hex">'+c.toUpperCase()+'</span><input type="color" value="'+c+'" style="position:absolute;opacity:0;width:0;height:0"></div></div>'; }
+  wrap.innerHTML=h;
+  wrap.querySelectorAll('[data-ap]').forEach(btn=>btn.onclick=()=>{ state.patternTarget=btn.dataset.ap; renderStep(); renderAll(); });
+  wrap.querySelectorAll('[data-ti]').forEach(row=>{ const i=+row.dataset.ti;
+    row.onclick=()=>openColorPicker(row, state.teamColors[i]||'#9aa1aa', c=>{ state.teamColors[i]=c; row.querySelector('.kf-ring>span').style.background=c; row.querySelector('.hex').textContent=c.toUpperCase(); renderAll(); refreshThumbs(); }); });
+}
+function colorRowK(label,key){ const v=state.sock[key];
+  return `<div class="kf-field"><label>${label}</label>${pickChips('k',key)}<div class="kf-color" data-k="${key}">
+    <span class="kf-ring"><span style="background:${v}"></span></span><span class="nm">${hexName(v)}</span><span class="hex">${v.toUpperCase()}</span>
+    <input type="color" value="${v}" style="position:absolute;opacity:0;width:0;height:0"></div></div>`; }
+function wireSock(root){ root.querySelectorAll('[data-k]').forEach(row=>{ const key=row.dataset.k;
+  row.onclick=()=>openColorPicker(row, state.sock[key], c=>{ state.sock[key]=c; updateRow(row,c); renderAll(); }); }); }
+function renderShortsStep(b){
+  const st=state.shorts.style;
+  let html='<div class="sec-title">Shorts</div><div class="kf-field"><label>Style</label><select class="kf-select" id="shStyle">'
+    + SHORT_STYLES.map(s=>`<option value="${s.id}" ${st===s.id?'selected':''}>${s.label}</option>`).join('')+'</select></div>'
+    + colorRowS('Base colour','base');
+  if(st==='stripes') html+='<div class="sub-title">Stripe colours</div>'+colorRowS('Outer','stripe')+colorRowS('Centre','stripe2');
+  else if(st==='pillar') html+='<div class="sub-title">Pillar</div>'+colorRowS('Border','pillarBorder')+colorRowS('Centre (no pattern)','stripe2');
+  else if(st==='flares'){ html+='<div class="sub-title">Flares</div>'+colorRowS('Left flare','flareL')+colorRowS('Right flare','flareR')
+    +'<div class="kf-field"><label class="kf-color" style="cursor:default;justify-content:space-between"><span>Use shirt pattern inside flare</span><input type="checkbox" id="flarePat" '+(state.shorts.flarePattern?'checked':'')+'></label></div>'; }
+  html+='<div class="sub-title">SQD logo</div>'+colorRow2('lgShorts','Logo colour',state.logo.shortsColor);
+  b.innerHTML=html;
+  b.querySelector('#shStyle').onchange=e=>{ state.shorts.style=e.target.value; renderShortsStep(b); renderAll(); };
+  const fp=b.querySelector('#flarePat'); if(fp) fp.onchange=e=>{ state.shorts.flarePattern=e.target.checked; renderAll(); };
+  wireColors(b); wireChips(b);
+  wireCG(b,'lgShorts',()=>state.logo.shortsColor,c=>state.logo.shortsColor=c);
+}
+function renderSocksStep(b){
+  const st=state.sock.style;
+  let html='<div class="sec-title">Socks</div><div class="kf-field"><label>Style</label><select class="kf-select" id="skStyle">'
+    + SOCK_STYLES.map(s=>`<option value="${s.id}" ${st===s.id?'selected':''}>${s.label}</option>`).join('')+'</select></div>'
+    + colorRowK('Base colour','base');
+  if(st==='hoops'||st==='stripes') html+='<div class="sub-title">Accent</div>'+colorRowK('Accent colour','accent');
+  else if(st==='topband') html+='<div class="sub-title">Top band</div>'+colorRowK('Band colour','accent')+colorRowK('Trim line','accent2');
+  html+='<div class="sub-title">SQD logo</div>'+colorRow2('lgSocks','Logo colour',state.logo.socksColor);
+  b.innerHTML=html;
+  b.querySelector('#skStyle').onchange=e=>{ state.sock.style=e.target.value; renderSocksStep(b); renderAll(); };
+  wireSock(b); wireChips(b);
+  wireCG(b,'lgSocks',()=>state.logo.socksColor,c=>state.logo.socksColor=c);
+}
+let ndrag=false, noff={x:0,y:0};
+function setupNumberDrag(){
+  const cb=document.getElementById('cBack');
+  function toC(e){ const r=cb.getBoundingClientRect(); return {x:(e.clientX-r.left)*(CW/r.width), y:(e.clientY-r.top)*(CH/r.height)}; }
+  function hit(p){ return state.number && Math.abs(p.x-state.numberX)<state.numberSize*0.7 && Math.abs(p.y-state.numberY)<state.numberSize*0.7; }
+  cb.addEventListener('pointerdown',e=>{ const p=toC(e); if(hit(p)){ ndrag=true; noff={x:p.x-state.numberX,y:p.y-state.numberY}; cb.setPointerCapture(e.pointerId); e.preventDefault(); } });
+  cb.addEventListener('pointermove',e=>{ const p=toC(e); if(ndrag){ state.numberX=Math.round(p.x-noff.x); state.numberY=Math.round(p.y-noff.y); renderAll(); } else { cb.style.cursor=hit(p)?'move':'default'; } });
+  const end=()=>{ ndrag=false; }; cb.addEventListener('pointerup',end); cb.addEventListener('pointercancel',end);
+}
+const WA_NUMBER='447377810898'; const SQD_EMAIL='massey@sqdsportswear.com';
+function _rr(x,X,Y,w,hh,r){ x.beginPath(); x.moveTo(X+r,Y); x.arcTo(X+w,Y,X+w,Y+hh,r); x.arcTo(X+w,Y+hh,X,Y+hh,r); x.arcTo(X,Y+hh,X,Y,r); x.arcTo(X,Y,X+w,Y,r); x.closePath(); }
+function downloadKit(name){ const gap=20, W=CW*2+gap; const lines=specSummary().split('\n'); const lineH=30, boxH=52+lines.length*lineH;
+  const c=document.createElement('canvas'); c.width=W; c.height=CH+boxH+34; const x=c.getContext('2d');
+  x.fillStyle='#ffffff'; x.fillRect(0,0,c.width,c.height);
+  x.drawImage(document.getElementById('cFront'),0,0); x.drawImage(document.getElementById('cBack'),CW+gap,0);
+  const by=CH+18, bx=12, bw=W-24, pad=24;
+  x.fillStyle='#0a0c0b'; _rr(x,bx,by,bw,boxH,16); x.fill();
+  x.textBaseline='alphabetic'; x.textAlign='left';
+  x.fillStyle='#39ff14'; x.font='800 23px Arial,sans-serif'; x.fillText('DESIGN DETAILS', bx+pad, by+34);
+  x.textAlign='right'; x.fillStyle='#8b938d'; x.font='800 17px Arial,sans-serif'; x.fillText('SQD SPORTSWEAR  ·  £25 PER STRIP', bx+bw-pad, by+33); x.textAlign='left';
+  x.fillStyle='#f3f5f3'; x.font='600 18px Arial,sans-serif';
+  lines.forEach((ln,i)=>{ x.fillText(ln, bx+pad, by+64+i*lineH); });
+  const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download=name||'sqd-kit.png'; a.click(); }
+function specSummary(){ const c=state.teamColors; const sh=SHORT_STYLES.find(x=>x.id===state.shorts.style), sk=SOCK_STYLES.find(x=>x.id===state.sock.style);
+  let s='Pattern: '+(state.pattern==='none'?'Plain (no pattern)':PAT_MANIFEST[state.pattern].label);
+  if(state.pattern!=='none') s+=' — applied to '+state.patternTarget;
+  s+='\nKit colours: Primary '+c[0].toUpperCase()+' / Secondary '+c[1].toUpperCase()+' / Third '+c[2].toUpperCase();
+  s+='\nShorts: '+(sh?sh.label:state.shorts.style);
+  s+='\nSocks: '+(sk?sk.label:state.sock.style);
+  s+='\nSquad number shown: '+(state.number||'-')+' ('+(NUMFONTS[state.numberFont]?NUMFONTS[state.numberFont].label:state.numberFont)+')';
+  s+='\nSQD logo: '+(state.logo.shirtPos==='center'?'higher & centred':'right chest');
+  s+='\nClub logo: '+(state.club.src?'uploaded':'none');
+  return s; }
+function buildOrderText(){ const g=id=>(document.getElementById(id).value||'').trim();
+  let sizes=[]; document.querySelectorAll('#sizeGrid input').forEach(i=>{ const q=parseInt(i.value||'0',10); if(q>0) sizes.push(i.dataset.sz+' x'+q); });
+  let t='SQD SPORTSWEAR — KIT QUOTE REQUEST\n\n';
+  t+='Name: '+g('ofName')+'\nEmail: '+g('ofEmail')+'\nPhone: '+g('ofPhone')+'\nClub/Team: '+g('ofClub')+'\n\n';
+  t+='Sizes & qty: '+(sizes.length?sizes.join(', '):'(to confirm)')+'\n\n';
+  t+=specSummary();
+  const n=g('ofNotes'); if(n) t+='\n\nNotes: '+n;
+  t+='\n\n(Kit mockup image downloaded — please attach it to this message.)';
+  return t; }
+function setupOrderForm(){
+  const SIZES=['YXS','YS','YM','YL','S','M','L','XL','2XL','3XL'];
+  document.getElementById('sizeGrid').innerHTML=SIZES.map(s=>'<div class="sz"><label>'+s+'</label><input data-sz="'+s+'" type="number" min="0" inputmode="numeric"></div>').join('');
+  const modal=document.getElementById('orderModal');
+  document.getElementById('reqQuote').onclick=()=>{ document.getElementById('specBox').textContent=specSummary(); modal.classList.add('on'); };
+  document.getElementById('omClose').onclick=()=>modal.classList.remove('on');
+  modal.onclick=e=>{ if(e.target===modal) modal.classList.remove('on'); };
+  const ok=()=>{ const n=document.getElementById('ofName').value.trim(), em=document.getElementById('ofEmail').value.trim(), ph=document.getElementById('ofPhone').value.trim(); if(!n||(!em&&!ph)){ alert('Please add your name and an email or phone number.'); return false; } return true; };
+  document.getElementById('sendWA').onclick=()=>{ if(!ok())return; downloadKit('sqd-kit.png'); window.open('https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(buildOrderText()),'_blank'); };
+  document.getElementById('sendEM').onclick=()=>{ if(!ok())return; downloadKit('sqd-kit.png'); const club=document.getElementById('ofClub').value.trim()||'New'; window.location.href='mailto:'+SQD_EMAIL+'?subject='+encodeURIComponent('Kit quote request — '+club)+'&body='+encodeURIComponent(buildOrderText()); };
+}
+const hitCache={};
+async function hitData(side, key, zones){ const k=side+':'+key; if(hitCache[k]) return hitCache[k];
+  const c=document.createElement('canvas'); c.width=CW; c.height=CH; const x=c.getContext('2d');
+  for(const z of zones){ const m=await asset('mp_'+side+'_'+z); if(m) x.drawImage(m,0,0,CW,CH); }
+  hitCache[k]=x.getImageData(0,0,CW,CH); return hitCache[k]; }
+async function hitGarment(side, px, py){ px=Math.round(px); py=Math.round(py); if(px<0||py<0||px>=CW||py>=CH) return null;
+  if(side==='back' && state.number){ if(Math.abs(px-state.numberX)<state.numberSize*0.7 && Math.abs(py-state.numberY)<state.numberSize*0.7) return 'text'; }
+  const idx=(py*CW+px)*4+3;
+  const sk=await hitData(side,'socks',['socks']); if(sk.data[idx]>20) return 'socks';
+  const sh=await hitData(side,'shorts',['shorts']); if(sh.data[idx]>20) return 'shorts';
+  const st=await hitData(side,'shirt',['body','sides','sleeves','cuffs','collar']); if(st.data[idx]>20) return 'shirt';
+  return null; }
+function setupCanvasClicks(){ [['cFront','front'],['cBack','back']].forEach(pair=>{ const cv=document.getElementById(pair[0]), side=pair[1];
+  cv.addEventListener('click', async e=>{ const r=cv.getBoundingClientRect(); const px=(e.clientX-r.left)*(CW/r.width), py=(e.clientY-r.top)*(CH/r.height);
+    const g=await hitGarment(side, px, py); if(g && g!==state.step){ state.step=g; const sel=document.getElementById('stepSel'); if(sel) sel.value=g; renderStep(); } }); }); }
+function init(){
+  const _bl=document.getElementById('brandLogo'); if(_bl&&ASSETS.logo_sqd) _bl.src=ASSETS.logo_sqd;
+  const sel=document.getElementById('stepSel'); STEPS.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.label;sel.appendChild(o);});
+  sel.value=state.step; sel.onchange=e=>{state.step=e.target.value;renderStep();};
+  document.getElementById('confirmBtn').onclick=()=>{ const i=STEPS.findIndex(x=>x.id===state.step); const n=STEPS[(i+1)%STEPS.length]; state.step=n.id; sel.value=n.id; renderStep(); };
+  document.querySelectorAll('#viewSeg button').forEach(btn=>btn.onclick=()=>{ state.view=btn.dataset.v; document.querySelectorAll('#viewSeg button').forEach(z=>z.classList.toggle('on',z===btn)); applyView(); });
+  document.getElementById('zoom').oninput=e=>{ state.zoom=+e.target.value; applyView(); };
+  document.getElementById('dl').onclick=()=>downloadKit('sqd-kit.png');
+  setupOrderForm();
+  restoreClub();
+  setupNumberDrag(); setupCanvasClicks(); applyView(); renderStep(); renderAll();
+  if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
+}
+const _patLoaded={};
+function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json').then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
+async function boot(){
+  try{
+    const [base,man]=await Promise.all([fetch('assets/base.json').then(r=>r.json()), fetch('assets/manifest.json').then(r=>r.json())]);
+    ASSETS=base.assets; NUMFONTS=base.numfonts; PAT_MANIFEST=man;
+    PATTERNS=[{id:'none',label:'None'}].concat(Object.keys(PAT_MANIFEST).map(id=>({id,label:PAT_MANIFEST[id].label})));
+    CATS=['All','Stripes','Geometric','Abstract','Camo','Texture'].filter(c=>c==='All'||Object.values(PAT_MANIFEST).some(m=>m.cat===c));
+    init();
+  }catch(e){ console.error(e); const sb=document.getElementById('stepBody'); if(sb) sb.innerHTML='<div style="padding:20px">Could not load the builder. Please refresh.</div>'; }
+}
+boot();
+</script>
+</body>
+</html>
