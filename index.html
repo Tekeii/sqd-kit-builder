@@ -538,6 +538,7 @@ function renderPatOpts(wrap){
     h+='<div class="kf-field" style="margin-top:16px"><label>Apply pattern to</label>'
       +'<div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+[['whole','Whole shirt'],['body','Main body'],['sleeves','Just sleeves'],['front','Front only'],['back','Back only'],['chest','Chest patch'],['left','Left side'],['right','Right side']].map(function(o){return '<button data-ap="'+o[0]+'" class="'+(state.patternTarget===o[0]?'on':'')+'">'+o[1]+'</button>';}).join('')+'</div></div>';
     h+='<div class="kf-field" style="margin-top:14px"><label>Design colours</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr"><button data-rc="0" class="'+(state.recolour?'':'on')+'">Original (HD)</button><button data-rc="1" class="'+(state.recolour?'on':'')+'">Recolour</button></div></div>';
+    if(state.recolour) h+='<div style="margin-top:8px;padding:8px 10px;background:rgba(57,255,20,.07);border:1px solid #1c211d;border-radius:8px;font-size:11px;line-height:1.45;color:#9aa39c">This is just a sample preview &mdash; recoloured designs may appear blurry or distorted. A high&#8209;quality mockup will be generated upon request.</div>';
   }
   const n=state.pattern==='none'?3:Math.max(3,PAT_MANIFEST[state.pattern].slots);
   h+='<div class="sub-title">Kit colours</div>';
