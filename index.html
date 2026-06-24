@@ -694,7 +694,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); setupGarSel(); wirePriceList(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='7';
+const BUILD='8';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
@@ -789,7 +789,7 @@ async function drawGarmentLogo(ctx,pack,W,H){
     return;
   }
   var body=findBodyPanel(pack);
-  if(state.club.img){ var c2=await clubImage(); if(c2 && body){ var cb=body.bbox; var cpw=cb[2]-cb[0],cph=cb[3]-cb[1]; var w2=cpw*0.20; var h2=c2.height*(w2/c2.width); ctx.drawImage(c2, cb[0]+cpw*0.60-w2/2, cb[1]+cph*0.30-h2/2, w2, h2); } }
+  if(state.club.img){ var c2=await clubImage(); if(c2 && body){ var cb=body.bbox; var cpw=cb[2]-cb[0],cph=cb[3]-cb[1]; var w2=cpw*0.20; var h2=c2.height*(w2/c2.width); ctx.drawImage(c2, cb[0]+cpw*0.70-w2/2, cb[1]+cph*0.23-h2/2, w2, h2); } }
   if(body){ var b=body.bbox; var bw=b[2]-b[0],bh=b[3]-b[1]; await logoMark(ctx, b[0]+bw*0.30, b[1]+bh*0.33-24, bw*0.12, state.glogo||'#1b1b1b'); }
   var leg=findLegPanel(pack);
   if(leg){ var l=leg.bbox; var lw=l[2]-l[0],lh=l[3]-l[1]; await logoMark(ctx, l[0]+lw*0.5, l[1]+lh*0.12-24, lw*0.40, state.glogo||'#1b1b1b'); }
