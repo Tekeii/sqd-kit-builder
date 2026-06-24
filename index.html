@@ -224,6 +224,8 @@ async function patternImage(side, box, clipCanvas){
 }
 async function drawShirtPattern(ctx, side){
   if(state.pattern==='none') return;
+  const tgt0=state.patternTarget;
+  if((tgt0==='front'&&side!=='front')||(tgt0==='back'&&side!=='back')||(tgt0==='chest'&&side!=='front')) return;
   const box=await shirtBox(side);
   const clip=document.createElement('canvas'); clip.width=CW; clip.height=CH; const cc=clip.getContext('2d');
   const tgt=state.patternTarget;
@@ -236,6 +238,10 @@ async function drawShirtPattern(ctx, side){
     for(const z of ['sleeves','cuffs']){ const m=await asset('mp_'+side+'_'+z); if(m) cc.drawImage(m,0,0,CW,CH); }
   } else {
     for(const z of ['body','sides','sleeves','cuffs']){ const m=await asset('mp_'+side+'_'+z); if(m) cc.drawImage(m,0,0,CW,CH); }
+    if(tgt==='left'||tgt==='right'||tgt==='chest'){ cc.globalCompositeOperation='destination-in'; cc.fillStyle='#fff';
+      if(tgt==='chest'){ cc.beginPath(); cc.ellipse(CW*0.5,CH*0.205,CW*0.25,CH*0.115,0,0,Math.PI*2); cc.fill(); }
+      else { var vleft=(tgt==='left')?(side==='back'):(side==='front'); if(vleft) cc.fillRect(0,0,CW/2,CH); else cc.fillRect(CW/2,0,CW/2,CH); }
+      cc.globalCompositeOperation='source-over'; }
   }
   const pat=await patternImage(side, box, clip); if(pat) ctx.drawImage(pat,0,0);
 }
@@ -530,7 +536,7 @@ function renderPatOpts(wrap){
   const names=['Primary','Secondary','Third','Fourth','Fifth','Sixth']; let h='';
   if(state.pattern!=='none'){
     h+='<div class="kf-field" style="margin-top:16px"><label>Apply pattern to</label>'
-      +'<div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr 1fr"><button data-ap="whole" class="'+(state.patternTarget==='whole'?'on':'')+'">Whole shirt</button><button data-ap="body" class="'+(state.patternTarget==='body'?'on':'')+'">Main body</button><button data-ap="sleeves" class="'+(state.patternTarget==='sleeves'?'on':'')+'">Just sleeves</button></div></div>';
+      +'<div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+[['whole','Whole shirt'],['body','Main body'],['sleeves','Just sleeves'],['front','Front only'],['back','Back only'],['chest','Chest patch'],['left','Left side'],['right','Right side']].map(function(o){return '<button data-ap="'+o[0]+'" class="'+(state.patternTarget===o[0]?'on':'')+'">'+o[1]+'</button>';}).join('')+'</div></div>';
     h+='<div class="kf-field" style="margin-top:14px"><label>Design colours</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr"><button data-rc="0" class="'+(state.recolour?'':'on')+'">Original (HD)</button><button data-rc="1" class="'+(state.recolour?'on':'')+'">Recolour</button></div></div>';
   }
   const n=state.pattern==='none'?3:Math.max(3,PAT_MANIFEST[state.pattern].slots);
