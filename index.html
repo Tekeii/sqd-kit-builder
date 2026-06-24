@@ -715,7 +715,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); setupGarSel(); wirePriceList(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='15';
+const BUILD='16';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
@@ -861,8 +861,8 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
       var pat=await garmentPattern(pid,regionBox(def.r,bb),clip,W,H); if(pat) ctx.drawImage(pat,0,0);
     }
   }
-  var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalCompositeOperation='multiply'; ctx.globalAlpha=0.55; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
-  var hil=await gimg(pack.highlights); if(hil){ ctx.save(); ctx.globalCompositeOperation='screen'; ctx.globalAlpha=0.42; ctx.drawImage(hil,0,0,W,H); ctx.restore(); }
+  var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalCompositeOperation='multiply'; ctx.globalAlpha=0.42; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
+  var hil=await gimg(pack.highlights); if(hil){ ctx.save(); ctx.globalCompositeOperation='screen'; ctx.globalAlpha=0.12; ctx.drawImage(hil,0,0,W,H); ctx.restore(); }
   if(side==='front'){ await drawGarmentLogo(ctx,pack,W,H); }
 }
 function renderGarmentStep(b){ var gid=state.garment; var man=GMAN[gid]; if(!man){ b.innerHTML='Loading…'; return; }
