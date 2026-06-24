@@ -715,7 +715,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); setupGarSel(); wirePriceList(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='13';
+const BUILD='14';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
@@ -861,7 +861,7 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
     }
   }
   var shd=await gimg(pack.shadows); if(shd){ ctx.globalCompositeOperation='multiply'; ctx.drawImage(shd,0,0,W,H); ctx.globalCompositeOperation='source-over'; }
-  var hil=await gimg(pack.highlights); if(hil){ ctx.globalCompositeOperation='screen'; ctx.drawImage(hil,0,0,W,H); ctx.globalCompositeOperation='source-over'; }
+  var hil=await gimg(pack.highlights); if(hil){ ctx.save(); ctx.globalAlpha=0.28; ctx.drawImage(hil,0,0,W,H); ctx.restore(); }
   if(side==='front'){ if(gid==='quarterzip') drawQuarterZip(ctx,pack,W,H); await drawGarmentLogo(ctx,pack,W,H); }
 }
 function renderGarmentStep(b){ var gid=state.garment; var man=GMAN[gid]; if(!man){ b.innerHTML='Loading…'; return; }
