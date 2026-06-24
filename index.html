@@ -413,7 +413,7 @@ async function renderSide(canvas, side){
   if(side==='back') await drawNumber(ctx);
 }
 let q=false, _dirty=false;
-function renderAll(){ var _rc=document.getElementById('rcNote'); if(_rc) _rc.style.display=state.recolour?'block':'none'; if(q){ _dirty=true; return; } q=true; requestAnimationFrame(async()=>{ try{ await renderSide(document.getElementById('cFront'),'front'); await renderSide(document.getElementById('cBack'),'back'); }finally{ q=false; if(_dirty){ _dirty=false; renderAll(); } } }); }
+function renderAll(){ var _rc=document.getElementById('rcNote'); if(_rc) _rc.style.display=state.recolour?'block':'none'; if(q){ _dirty=true; return; } q=true; setTimeout(async()=>{ try{ await renderSide(document.getElementById('cFront'),'front'); await renderSide(document.getElementById('cBack'),'back'); }finally{ q=false; if(_dirty){ _dirty=false; renderAll(); } } }, 0); }
 function curHasBack(){ var g=state.garment||'kit'; if(g==='kit') return true; var m=GMAN[g]; return !!(m&&m.sides&&m.sides.indexOf('back')>=0); }
 function applyView(){
   var noBack=!curHasBack();
@@ -710,7 +710,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); setupGarSel(); wirePriceList(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='10';
+const BUILD='11';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
