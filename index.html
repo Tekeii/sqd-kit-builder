@@ -463,14 +463,19 @@ function ensurePop(){ if(_cpop) return _cpop; const d=document.createElement('di
 function openColorPicker(anchor, hex, onPick){ const d=ensurePop(); hex=hex||'#ffffff';
   const setUI=c=>{ d.querySelector('#cpNative').value=c; d.querySelector('#cpHex').value=c.toUpperCase(); d.querySelectorAll('.cpsw').forEach(b=>b.classList.toggle('on', b.dataset.c.toLowerCase()===c.toLowerCase())); };
   const pick=c=>{ onPick(c); setUI(c); };
+  let _md,_lt;
+  const close=()=>{ d.style.display='none'; d.onmouseenter=null; d.onmouseleave=null; clearTimeout(_lt); if(_md){ document.removeEventListener('mousedown',_md); _md=null; } };
   setUI(hex);
-  d.querySelectorAll('.cpsw').forEach(b=>b.onclick=()=>pick(b.dataset.c));
+  d.querySelectorAll('.cpsw').forEach(b=>b.onclick=()=>{ pick(b.dataset.c); close(); });
   d.querySelector('#cpNative').oninput=e=>pick(e.target.value);
-  d.querySelector('#cpHex').onchange=e=>{ let v=e.target.value.trim(); if(v[0]!=='#')v='#'+v; if(/^#[0-9a-fA-F]{6}$/.test(v)) pick(v); };
+  d.querySelector('#cpNative').onchange=()=>close();
+  d.querySelector('#cpHex').onchange=e=>{ let v=e.target.value.trim(); if(v[0]!=='#')v='#'+v; if(/^#[0-9a-fA-F]{6}$/.test(v)){ pick(v); close(); } };
   const r=anchor.getBoundingClientRect(); d.style.display='block';
   d.style.left=Math.max(8,Math.min(r.left, window.innerWidth-d.offsetWidth-8))+'px';
   d.style.top=Math.min(r.bottom+6, window.innerHeight-d.offsetHeight-8)+'px';
-  setTimeout(()=>{ const close=ev=>{ if(!d.contains(ev.target) && !anchor.contains(ev.target) && ev.target!==anchor){ d.style.display='none'; document.removeEventListener('mousedown',close); } }; document.addEventListener('mousedown',close); },0);
+  d.onmouseenter=()=>clearTimeout(_lt);
+  d.onmouseleave=()=>{ _lt=setTimeout(close,300); };
+  setTimeout(()=>{ _md=ev=>{ if(!d.contains(ev.target) && !anchor.contains(ev.target) && ev.target!==anchor){ close(); } }; document.addEventListener('mousedown',_md); },0);
 }
 function colorRow2(cid,label,hex){ return '<div class="kf-field"><label>'+label+'</label><div class="kf-color" data-cg="'+cid+'"><span class="kf-ring"><span style="background:'+hex+'"></span></span><span class="nm">'+hexName(hex)+'</span><span class="hex">'+hex.toUpperCase()+'</span></div></div>'; }
 function wireCG(root,cid,get,set,after){ const row=root.querySelector('[data-cg="'+cid+'"]'); if(!row)return; row.onclick=()=>openColorPicker(row,get(),function(c){ set(c); updateRow(row,c); renderAll(); if(after)after(); }); }
@@ -710,7 +715,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); setupGarSel(); wirePriceList(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='12';
+const BUILD='13';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
