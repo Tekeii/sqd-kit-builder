@@ -94,6 +94,10 @@ input[type=checkbox]{ accent-color:var(--neon); width:18px; height:18px; }
 .promo .pt b{ font-size:13px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:var(--text); }
 .promo .pt small{ font-size:12px; color:var(--muted); font-weight:600; margin-top:1px; }
 .promo-note{ text-align:center; color:var(--muted); font-size:11.5px; font-weight:600; font-style:italic; max-width:560px; margin:7px auto 2px; padding:0 12px; line-height:1.35; }
+.garpick{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
+.garpick button{ flex:1 1 calc(33.333% - 7px); min-width:84px; border:1.5px solid var(--line); background:var(--surface2); color:var(--text); border-radius:10px; padding:11px 6px; font-size:12px; font-weight:700; cursor:pointer; line-height:1.15; transition:.12s; }
+.garpick button.on{ border-color:var(--neon); background:rgba(57,255,20,.12); color:#fff; box-shadow:0 0 0 1px var(--neon) inset; }
+.garpick button:hover{ border-color:var(--neon); }
 @media(max-width:860px){
   .kf-main{ display:flex; flex-direction:column; min-height:0; }
   .kf-main > section{ order:1; }
@@ -121,7 +125,8 @@ input[type=checkbox]{ accent-color:var(--neon); width:18px; height:18px; }
   <div class="kf-head"><img id="brandLogo" alt="SQD"><div class="ti"><h1>Full Kit Builder</h1></div></div>
   <div class="kf-main">
     <aside class="kf-left">
-      <div class="kf-stepbar"><select id="garSel" style="margin-right:8px"></select><select id="stepSel"></select></div>
+      <div class="garpick" id="garPick"></div>
+      <div class="kf-stepbar"><select id="stepSel"></select></div>
       <div class="kf-body" id="stepBody"></div>
       <div class="kf-confirm" id="confirmBtn">&#10003;</div>
     </aside>
@@ -135,8 +140,10 @@ input[type=checkbox]{ accent-color:var(--neon); width:18px; height:18px; }
         <div class="kf-view" id="viewFront"><canvas id="cFront"></canvas><div class="lbl">Front</div></div>
         <div class="kf-view" id="viewBack"><canvas id="cBack"></canvas><div class="lbl">Back</div></div>
       </div>
-      <div class="promo"><span class="pp">£25</span><span class="pt"><b>per full strip</b><small>Shirt, shorts, socks &amp; all printing included</small></span></div>
-      <div class="promo-note">This is just a preview of your strip — an exact mockup will be shared during the order phase.</div>
+      <div class="promo" id="promoBox"><span class="pp" id="promoPrice">£25</span><span class="pt"><b id="promoName">Per Full Strip</b><small id="promoDesc">Shirt, shorts, socks &amp; all printing included</small></span></div>
+      <div class="promo-note" id="promoNote">This is just a preview of your strip — an exact mockup will be shared during the order phase.</div>
+      <div style="text-align:center;margin:3px auto 0"><button id="plToggle" type="button" style="background:none;border:none;color:var(--neon);font-weight:700;font-size:11.5px;cursor:pointer;text-decoration:underline">View full price list</button></div>
+      <div id="plBox" style="display:none;max-width:540px;margin:8px auto 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px"></div>
       <div style="text-align:center;padding-bottom:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button id="reqQuote" class="kf-dl">Order Form</button><button id="contactUs" class="kf-dl" style="background:var(--surface2);color:var(--text);border:1px solid var(--line)">Contact Us</button><button id="dl" class="kf-dl" style="background:var(--surface2);color:var(--text);border:1px solid var(--line)">Download PNG</button></div>
     </section>
   </div>
@@ -681,10 +688,10 @@ function init(){
   (function(){var cm=document.getElementById('contactModal');document.getElementById('contactUs').onclick=function(){cm.classList.add('on');};document.getElementById('cmClose').onclick=function(){cm.classList.remove('on');};cm.onclick=function(e){if(e.target===cm)cm.classList.remove('on');};var msg=function(){return 'Hi SQD! I\'ve been using the kit builder and have a question about this design. I\'ve attached my mockup.\n\n'+specSummary();};document.getElementById('cWA').onclick=function(){downloadKit('sqd-kit.png');window.open('https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(msg()),'_blank');};document.getElementById('cEM').onclick=function(){downloadKit('sqd-kit.png');window.location.href='mailto:'+SQD_EMAIL+'?subject='+encodeURIComponent('Kit enquiry — SQD builder')+'&body='+encodeURIComponent(msg());};})();
   setupOrderForm();
   restoreClub();
-  setupNumberDrag(); setupCanvasClicks(); setupGarSel(); applyView(); renderStep(); renderAll();
+  setupNumberDrag(); setupCanvasClicks(); setupGarSel(); wirePriceList(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='5';
+const BUILD='6';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
@@ -698,13 +705,46 @@ async function boot(){
 }
 boot();
 /* ===== SQD multi-garment mode ===== */
+function gKind(gid){ if(gid==='kit') return 'kit'; var m=GMAN[gid]; return (m&&m.kind)||'top'; }
+function gSwatchFor(man,zoneName){ if(man&&man.swatches){ for(var i=0;i<man.swatches.length;i++){ var sw=man.swatches[i]; if(sw.zones&&sw.zones.indexOf(zoneName)>=0) return sw.name; } } return gSwatchOf(zoneName); }
+var GPRICE={kit:['\u00a325','Per Full Strip','Shirt, shorts, socks & all printing included'],
+ tracksuit:['\u00a335','Full Tracksuit','Jacket, bottoms & all printing included'],
+ jacket:['\u00a322','Tracksuit Jacket','Jacket & all printing included'],
+ hoodie:['\u00a325','Sublimated Hoodie','Hoodie & all printing included'],
+ ziphoodie:['\u00a325','Zip Hoodie','Full-zip hoodie & all printing included'],
+ quarterzip:['\u00a325','1/4 Zip','1/4 zip top & all printing included'],
+ flathat:['\u00a315','Flat Peak Cap','Cap & badge embroidery included'],
+ curvedhat:['\u00a315','Curved Peak Cap','Cap & badge embroidery included']};
+function updatePromo(){ var g=state.garment||'kit'; var pr=GPRICE[g]||GPRICE.kit;
+  var pe=document.getElementById('promoPrice'),pn=document.getElementById('promoName'),pd=document.getElementById('promoDesc'),no=document.getElementById('promoNote');
+  if(pe)pe.textContent=pr[0]; if(pn)pn.textContent=pr[1]; if(pd)pd.textContent=pr[2];
+  if(no)no.textContent=(g==='kit')?'This is just a preview of your strip \u2014 an exact mockup will be shared during the order phase.':'This is a preview only \u2014 an exact mockup will be shared during the order phase.'; }
+var PRICE_LIST=[['Shirt \u2014 Half Sleeve','\u00a316'],['Shirt \u2014 Full Sleeve','\u00a319'],['Shorts','\u00a315'],['Socks','\u00a37'],['Full Strip','\u00a325'],['Full Tracksuit','\u00a335'],['Tracksuit Jacket','\u00a322'],['Tracksuit Bottoms','\u00a320'],['Sublimated Hoodie','\u00a325'],['1/4 Zip','\u00a325'],['Gilet','\u00a335'],['Winter Jacket','\u00a335'],['Raincoat','\u00a334'],['Winter Robe','\u00a385'],['Polo Shirt','\u00a319'],['Cotton Polo Shirt','\u00a317.50'],['Snood','\u00a314'],['Gloves','\u00a318'],['Baseball Cap','\u00a315'],['Bobble Hat','\u00a313'],['Backpack','\u00a35'],['Boot Bag','\u00a315'],['Duffle Bag','\u00a325'],['Large Flag','\u00a317'],['Corner Flag','\u00a310']];
+function wirePriceList(){ var t=document.getElementById('plToggle'),box=document.getElementById('plBox'); if(!t||!box) return;
+  box.innerHTML='<div style="font-weight:800;color:#fff;margin-bottom:8px;font-size:13px">Adult Price List</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 22px;font-size:12px">'+PRICE_LIST.map(function(r){return '<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:3px 0"><span style="color:var(--muted)">'+r[0]+'</span><b style="color:#fff">'+r[1]+'</b></div>';}).join('')+'</div><div style="font-size:10.5px;color:var(--muted);margin-top:8px;font-style:italic">Junior pricing & bulk discounts available \u2014 please contact us.</div>';
+  t.onclick=function(){ var show=box.style.display==='none'; box.style.display=show?'block':'none'; t.textContent=show?'Hide price list':'View full price list'; }; }
+function garLogoSection(){ var h='<div class="sub-title">Your logo / badge</div>'
+   +'<div class="kf-field"><button id="gLogoUp" type="button" style="width:100%;border:1px dashed var(--line);border-radius:10px;padding:11px;font-weight:700;background:var(--surface2);color:var(--text);cursor:pointer">Upload logo / badge</button><input type="file" id="gLogoFile" accept="image/*" style="display:none"></div>';
+  if(state.club&&state.club.src){ h+='<div class="kf-field"><label class="kf-color" style="cursor:default;justify-content:space-between"><span>Remove background (auto)</span><input type="checkbox" id="gLogoRW" '+(state.club.removeWhite?'checked':'')+'></label></div>'
+    +'<div class="kf-field"><button id="gLogoRemove" type="button" style="width:100%;border:1px solid #5a3030;color:#ff8a8a;border-radius:10px;padding:9px;font-weight:700;background:transparent;cursor:pointer">Remove logo</button></div>'; }
+  return h; }
+function wireGarLogo(b){ var up=b.querySelector('#gLogoUp'); if(!up) return;
+  up.onclick=function(){ b.querySelector('#gLogoFile').click(); };
+  b.querySelector('#gLogoFile').onchange=function(e){ var f=e.target.files[0]; if(!f)return; var rd=new FileReader(); rd.onload=function(){ state.club.src=rd.result; processClub().then(function(){ saveClub(); renderGarmentStep(b); renderAll(); }); }; rd.readAsDataURL(f); };
+  if(state.club&&state.club.src){ var rw=b.querySelector('#gLogoRW'); if(rw) rw.onchange=function(e){ state.club.removeWhite=e.target.checked; processClub().then(function(){ saveClub(); renderAll(); }); };
+    var rm=b.querySelector('#gLogoRemove'); if(rm) rm.onclick=function(){ state.club={src:null,img:null,removeWhite:true,pos:'center',size:1}; saveClub(); renderGarmentStep(b); renderAll(); }; } }
 function setupGarSel(){
-  var sel=document.getElementById('garSel'); if(!sel) return;
-  var opts='<option value="kit">Football Kit</option>';
-  for(var gid in GMAN){ opts+='<option value="'+gid+'">'+GMAN[gid].label+'</option>'; }
-  sel.innerHTML=opts; sel.value=state.garment||'kit';
-  var ss=document.getElementById('stepSel'); if(ss) ss.style.display=(state.garment==='kit')?'':'none';
-  sel.onchange=function(){ state.garment=sel.value; state.pattern='none'; state.gtarget='Whole'; state.gsection=(GMAN[state.garment]&&GMAN[state.garment].pieces)?GMAN[state.garment].pieces[0]:'main'; var s2=document.getElementById('stepSel'); if(s2) s2.style.display=(state.garment==='kit')?'':'none'; if(state.garment==='kit') state.step='shirt'; renderStep(); renderAll(); };
+  var pick=document.getElementById('garPick'); if(!pick) return;
+  var items=[['kit','Football Kit']]; for(var gid in GMAN){ items.push([gid,GMAN[gid].label]); }
+  pick.innerHTML=items.map(function(it){ return '<button data-g="'+it[0]+'" class="'+(((state.garment||'kit')===it[0])?'on':'')+'">'+it[1]+'</button>'; }).join('');
+  var ss=document.getElementById('stepSel'); if(ss) ss.style.display=((state.garment||'kit')==='kit')?'':'none';
+  pick.querySelectorAll('button').forEach(function(btn){ btn.onclick=function(){ var g=btn.dataset.g; state.garment=g; state.pattern='none'; state.gtarget='Whole'; state.recolour=false;
+    state.gsection=(GMAN[g]&&GMAN[g].pieces)?GMAN[g].pieces[0]:'main';
+    if(g==='kit') state.step='shirt';
+    var s2=document.getElementById('stepSel'); if(s2) s2.style.display=(g==='kit')?'':'none';
+    pick.querySelectorAll('button').forEach(function(z){ z.classList.toggle('on',z.dataset.g===g); });
+    updatePromo(); renderStep(); renderAll(); }; });
+  updatePromo();
 }
 function gimg(src){ if(GIMG[src]) return GIMG[src]; var im=new Image(); var p=new Promise(function(res){ im.onload=function(){res(im);}; im.onerror=function(){res(null);}; }); im.src=src; GIMG[src]=p; return p; }
 function ensureGPack(gid,side){ var k=gid+'_'+side; if(GPACK[k]) return GPACK[k]; GPACK[k]=fetch('assets/garments/base-'+k+'.json?v='+BUILD,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return null;}); return GPACK[k]; }
@@ -722,14 +762,31 @@ function gSwatchOf(name){ var parts=name.split('/'); var leaf=parts[parts.length
 function gDefault(sw){ var l=sw.toLowerCase(); if(l.indexOf('collar')>=0||l.indexOf('cuff')>=0||l.indexOf('waist')>=0||l.indexOf('ankle')>=0||l.indexOf('zip')>=0||l.indexOf('string')>=0) return '#15284f'; if(l.indexOf('inside')>=0) return '#cccccc'; return '#e6e8eb'; }
 function gColor(gid,sw){ var k=gid+'|'+sw; return state.gcol[k]||gDefault(sw); }
 function colorRowG(gid,sw){ var v=gColor(gid,sw); return '<div class="kf-field"><label>'+sw+'</label><input type="color" class="gcolinp" data-gk="'+gid+'|'+sw+'" value="'+v+'" style="width:100%;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);cursor:pointer;padding:2px"></div>'; }
-async function drawGarmentLogo(ctx,pack,W,H){
-  if(!pack.panels) return; var col=state.glogo||'#ffffff';
-  var body=null;
-  for(var i=0;i<pack.panels.length;i++){ var p=pack.panels[i]; if(p.main && panelGroupJS(p.name)==='Body' && p.name.toLowerCase().indexOf('leg')<0){ if(p.name.toLowerCase().indexOf('body')>=0){body=p;break;} if(!body)body=p; } }
-  if(body){ var b=body.bbox; var bw=b[2]-b[0],bh=b[3]-b[1]; await logoMark(ctx, b[0]+bw*0.35, b[1]+bh*0.15, bw*0.15, col); }
-  var leg=null;
+function findBodyPanel(pack){ if(!pack.panels) return null; var body=null;
+  for(var i=0;i<pack.panels.length;i++){ var p=pack.panels[i]; if(p.main && panelGroupJS(p.name)==='Body' && p.name.toLowerCase().indexOf('leg')<0){ if(p.name.toLowerCase().indexOf('body')>=0) return p; if(!body)body=p; } }
+  return body; }
+function findLegPanel(pack){ if(!pack.panels) return null; var leg=null;
   for(var j=0;j<pack.panels.length;j++){ var q=pack.panels[j]; if(q.name.toLowerCase().indexOf('leg')>=0){ if(!leg || ((q.bbox[0]+q.bbox[2])/2 > (leg.bbox[0]+leg.bbox[2])/2)) leg=q; } }
-  if(leg){ var l=leg.bbox; var lw=l[2]-l[0],lh=l[3]-l[1]; await logoMark(ctx, l[0]+lw*0.5, l[1]+lh*0.12, lw*0.42, col); }
+  return leg; }
+function drawQuarterZip(ctx,pack,W,H){ var body=findBodyPanel(pack); if(!body) return; var b=body.bbox;
+  var bw=b[2]-b[0],bh=b[3]-b[1]; var cx=(b[0]+b[2])/2; var top=b[1]+bh*0.03; var len=bh*0.22; var zw=Math.max(3,bw*0.022);
+  ctx.save();
+  ctx.fillStyle='#d2d2d2'; ctx.fillRect(cx-zw, top, zw*2, len);
+  ctx.fillStyle='#7c7c7c'; ctx.fillRect(cx-zw*0.32, top, zw*0.64, len);
+  var py=top+len; ctx.fillStyle='#9a9a9a'; ctx.fillRect(cx-zw*0.7, py, zw*1.4, bh*0.028);
+  ctx.fillStyle='#6f6f6f'; ctx.fillRect(cx-zw*0.28, py+bh*0.028, zw*0.56, bh*0.03);
+  ctx.restore(); }
+async function drawGarmentLogo(ctx,pack,W,H){
+  var gid=state.garment; var kind=gKind(gid);
+  if(kind==='hat'){
+    if(state.club.img){ var ci=await clubImage(); if(ci){ var bx=pack.badge||[W*0.42,H*0.30,W*0.58,H*0.55]; var bbw=bx[2]-bx[0],bbh=bx[3]-bx[1]; var hcx=(bx[0]+bx[2])/2,hcy=(bx[1]+bx[3])/2; var ww=bbw, hh=ci.height*(ww/ci.width); if(hh>bbh){ hh=bbh; ww=ci.width*(hh/ci.height); } ctx.drawImage(ci, hcx-ww/2, hcy-hh/2, ww, hh); } }
+    return;
+  }
+  var body=findBodyPanel(pack);
+  if(state.club.img){ var c2=await clubImage(); if(c2 && body){ var cb=body.bbox; var cpw=cb[2]-cb[0],cph=cb[3]-cb[1]; var w2=cpw*0.20; var h2=c2.height*(w2/c2.width); ctx.drawImage(c2, cb[0]+cpw*0.60-w2/2, cb[1]+cph*0.30-h2/2, w2, h2); } }
+  if(body){ var b=body.bbox; var bw=b[2]-b[0],bh=b[3]-b[1]; await logoMark(ctx, b[0]+bw*0.30, b[1]+bh*0.33, bw*0.12, '#1b1b1b'); }
+  var leg=findLegPanel(pack);
+  if(leg){ var l=leg.bbox; var lw=l[2]-l[0],lh=l[3]-l[1]; await logoMark(ctx, l[0]+lw*0.5, l[1]+lh*0.12, lw*0.40, '#1b1b1b'); }
 }
 var TARGETDEF={'Whole':{g:null,r:'full'},'Body':{g:['Body'],r:'full'},'Legs':{g:['Body'],r:'full'},'Sleeves':{g:['Sleeves'],r:'full'},'Hood':{g:['Hood'],r:'full'},'Chest band':{g:['Body'],r:'band'},'Side panels':{g:['Body'],r:'side'},'Side stripe':{g:['Body'],r:'side'},'Sleeve pillar':{g:['Sleeves'],r:'pillar'},'Shoulders':{g:['Sleeves'],r:'shoulder'}};
 function panelGroupJS(name){ var leaf=name.split('/').pop().toLowerCase();
@@ -762,7 +819,7 @@ async function garmentPattern(pid,box,clip,W,H){ await ensurePat(pid); var man=P
 async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=GMAN[gid]; if(!man) return;
   if(man.sides.indexOf(side)<0){ canvas.width=man.w; canvas.height=man.h; canvas.getContext('2d').clearRect(0,0,man.w,man.h); return; }
   var pack=await ensureGPack(gid,side); if(!pack) return; var W=pack.w,H=pack.h; canvas.width=W; canvas.height=H; var ctx=canvas.getContext('2d'); ctx.clearRect(0,0,W,H);
-  for(var zi=0; zi<pack.zones.length; zi++){ var z=pack.zones[zi]; var m=await gimg(z.mask); if(!m) continue; var col=gColor(gid,gSwatchOf(z.name)); var t=document.createElement('canvas'); t.width=W;t.height=H; var tc=t.getContext('2d'); tc.fillStyle=col; tc.fillRect(0,0,W,H); tc.globalCompositeOperation='destination-in'; tc.drawImage(m,0,0,W,H); ctx.drawImage(t,0,0); }
+  for(var zi=0; zi<pack.zones.length; zi++){ var z=pack.zones[zi]; var m=await gimg(z.mask); if(!m) continue; var col=gColor(gid,gSwatchFor(man,z.name)); var t=document.createElement('canvas'); t.width=W;t.height=H; var tc=t.getContext('2d'); tc.fillStyle=col; tc.fillRect(0,0,W,H); tc.globalCompositeOperation='destination-in'; tc.drawImage(m,0,0,W,H); ctx.drawImage(t,0,0); }
   if(pack.panels){
     for(var pi=0; pi<pack.panels.length; pi++){ var pan=pack.panels[pi];
       var piece=pan.name.indexOf('/')>=0?pan.name.slice(0,pan.name.indexOf('/')):'main';
@@ -778,9 +835,18 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
   }
   var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalAlpha=0.5; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
   var hil=await gimg(pack.highlights); if(hil){ ctx.save(); ctx.globalAlpha=0.36; ctx.drawImage(hil,0,0,W,H); ctx.restore(); }
-  if(side==='front') await drawGarmentLogo(ctx,pack,W,H);
+  if(side==='front'){ if(gid==='quarterzip') drawQuarterZip(ctx,pack,W,H); await drawGarmentLogo(ctx,pack,W,H); }
 }
 function renderGarmentStep(b){ var gid=state.garment; var man=GMAN[gid]; if(!man){ b.innerHTML='Loading…'; return; }
+  var kind=gKind(gid);
+  if(kind==='hat'){
+    var hh='<div class="sec-title">Cap colours</div>';
+    for(var hi=0; hi<man.swatches.length; hi++){ hh+=colorRowG(gid,man.swatches[hi].name); }
+    hh+=garLogoSection()+'<div class="promo-note" style="margin:12px 0 0;text-align:left">Caps are embroidered, not sublimated — recolour the cap and add your badge above. Patterns aren’t available on caps.</div>';
+    b.innerHTML=hh; wireGarLogo(b);
+    b.querySelectorAll('.gcolinp').forEach(function(inp){ inp.oninput=function(){ state.gcol[inp.dataset.gk]=inp.value; renderAll(); }; });
+    return;
+  }
   var pieces=man.pieces||['main'];
   if(pieces.length>1 && pieces.indexOf(state.gsection)<0) state.gsection=pieces[0];
   var active=pieces.length>1?state.gsection:pieces[0];
@@ -795,20 +861,16 @@ function renderGarmentStep(b){ var gid=state.garment; var man=GMAN[gid]; if(!man
    +'<input id="patSearch" class="kf-input" placeholder="Search designs…" style="margin-bottom:10px" value="'+(state.patSearch||'')+'">'
    +'<div class="kf-grid" id="patGrid"></div><div class="kf-pager" id="patPager"></div>'
    +'<div class="kf-field" style="margin-top:16px"><label>Apply '+(pieces.length>1?active.toLowerCase()+' ':'')+'pattern to</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;grid-auto-flow:row;width:100%;border:none;overflow:visible">'+tgts.map(function(t){return '<button data-gt="'+t+'" class="'+(curTgt===t?'on':'')+'">'+t+'</button>';}).join('')+'</div></div>'
-   +'<div class="kf-field" style="margin-top:14px"><label>Design colours</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr"><button data-rc="0" class="'+(state.recolour?'':'on')+'">Original (HD)</button><button data-rc="1" class="'+(state.recolour?'on':'')+'">Recolour</button></div></div>'
-   +'<div class="sub-title">SQD logo</div><div class="kf-field"><label>Logo colour</label><input type="color" class="glogoinp" value="'+(state.glogo||'#ffffff')+'" style="width:100%;height:38px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);cursor:pointer;padding:2px"></div>'+'<div class="sub-title">Garment colours</div>';
-  for(var si=0; si<man.swatches.length; si++){ h+=colorRowG(gid,man.swatches[si].name); }
+   +garLogoSection()
+   +'<div class="promo-note" style="margin:14px 0 0;text-align:left">For personalised colours, please <a href="https://sqdsportswear.com/pages/contact" target="_blank" style="color:var(--neon);font-weight:700">contact us</a> — we’ll match any colourway during the order phase.</div>';
   b.innerHTML=h; buildPatGrid();
   b.querySelectorAll('[data-sec]').forEach(function(x){ x.onclick=function(){ state.gsection=x.dataset.sec; state.patPage=0; renderGarmentStep(b); }; });
   b.querySelectorAll('#catTabs button').forEach(function(btn){ btn.onclick=function(){ state.patCat=btn.dataset.cat; state.patPage=0; renderGarmentStep(b); }; });
   var se=b.querySelector('#patSearch'); if(se) se.oninput=function(){ state.patSearch=se.value; state.patPage=0; buildPatGrid(); };
   b.querySelectorAll('#patGrid [data-p]').forEach(function(t){ t.onclick=function(){ state.gpat[key]=t.dataset.p; renderGarmentStep(b); renderAll(); }; });
   b.querySelectorAll('[data-gt]').forEach(function(x){ x.onclick=function(){ state.gtgt[key]=x.dataset.gt; renderGarmentStep(b); renderAll(); }; });
-  b.querySelectorAll('[data-rc]').forEach(function(x){ x.onclick=function(){ state.recolour=x.dataset.rc==='1'; renderGarmentStep(b); renderAll(); }; });
-  b.querySelectorAll('.gcolinp').forEach(function(inp){ inp.oninput=function(){ state.gcol[inp.dataset.gk]=inp.value; renderAll(); }; });
-  b.querySelectorAll('.glogoinp').forEach(function(inp){ inp.oninput=function(){ state.glogo=inp.value; renderAll(); }; });
+  wireGarLogo(b);
 }
-
 </script>
 </body>
 </html>
