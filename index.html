@@ -179,7 +179,7 @@ const NUM_FONTS={ block:{label:'Block (bold)',css:'900 #px Arial,Helvetica,sans-
 const state={
   step:'shirt', view:'both', zoom:320,
   colors:{ body:'#c9ced4', sides:'#aab0b8', sleeves:'#aab0b8', cuffs:'#ffffff', collar:'#ffffff', piping:'#ffffff', socks:'#c9ced4' },
-  pattern:'none', patCat:'All', patSearch:'', patPage:0, patternTarget:'whole', recolour:false, garment:'kit', gtarget:'Whole', gcol:{}, gpat:{}, gtgt:{}, gsection:'', teamColors:['#d2d6db','#ffffff','#9aa1aa','#6e757e','#e6e8eb','#4b525a'],
+  pattern:'none', patCat:'All', patSearch:'', patPage:0, patternTarget:'whole', recolour:false, garment:'kit', gtarget:'Whole', gcol:{}, gpat:{}, gtgt:{}, gsection:'', glogo:'#ffffff', teamColors:['#d2d6db','#ffffff','#9aa1aa','#6e757e','#e6e8eb','#4b525a'],
   shorts:{ style:'plain', base:'#c9ced4', stripe:'#ffffff', stripe2:'#9aa1aa', pillarBorder:'#6e757e', flareL:'#9aa1aa', flareR:'#6e757e', flarePattern:false, baseAuto:true },
   sock:{ style:'plain', base:'#c9ced4', accent:'#ffffff', accent2:'#9aa1aa', baseAuto:true },
   logo:{ shirtPos:'chest', shirtColor:'#ffffff', shortsColor:'#ffffff', socksColor:'#ffffff' },
@@ -377,8 +377,8 @@ async function logoMark(ctx, cx, cy, w, color){
 async function drawLogo(ctx, side){
   if(side!=='front') return;
   const L=state.logo; const sb=await shirtBox(side);
-  if(L.shirtPos==='center') await logoMark(ctx, sb.x+sb.w*0.5, sb.y+sb.h*0.21, sb.w*0.17, L.shirtColor);
-  else await logoMark(ctx, sb.x+sb.w*0.355, sb.y+sb.h*0.30, sb.w*0.17, L.shirtColor);
+  if(L.shirtPos==='center') await logoMark(ctx, sb.x+sb.w*0.5, sb.y+sb.h*0.21, sb.w*0.12, L.shirtColor);
+  else await logoMark(ctx, sb.x+sb.w*0.355, sb.y+sb.h*0.30, sb.w*0.12, L.shirtColor);
   const legs=await legBoxes(side); const lg=legs.L;
   if(lg.w>4) await logoMark(ctx, lg.x+lg.w*0.60, lg.y+lg.h*0.80, lg.w*0.40, L.shortsColor);
   const skb=await maskBox(side,['socks'],'socks');
@@ -722,6 +722,15 @@ function gSwatchOf(name){ var parts=name.split('/'); var leaf=parts[parts.length
 function gDefault(sw){ var l=sw.toLowerCase(); if(l.indexOf('collar')>=0||l.indexOf('cuff')>=0||l.indexOf('waist')>=0||l.indexOf('ankle')>=0||l.indexOf('zip')>=0||l.indexOf('string')>=0) return '#15284f'; if(l.indexOf('inside')>=0) return '#cccccc'; return '#e6e8eb'; }
 function gColor(gid,sw){ var k=gid+'|'+sw; return state.gcol[k]||gDefault(sw); }
 function colorRowG(gid,sw){ var v=gColor(gid,sw); return '<div class="kf-field"><label>'+sw+'</label><input type="color" class="gcolinp" data-gk="'+gid+'|'+sw+'" value="'+v+'" style="width:100%;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);cursor:pointer;padding:2px"></div>'; }
+async function drawGarmentLogo(ctx,pack,W,H){
+  if(!pack.panels) return; var col=state.glogo||'#ffffff';
+  var body=null;
+  for(var i=0;i<pack.panels.length;i++){ var p=pack.panels[i]; if(p.main && panelGroupJS(p.name)==='Body' && p.name.toLowerCase().indexOf('leg')<0){ if(p.name.toLowerCase().indexOf('body')>=0){body=p;break;} if(!body)body=p; } }
+  if(body){ var b=body.bbox; var bw=b[2]-b[0],bh=b[3]-b[1]; await logoMark(ctx, b[0]+bw*0.35, b[1]+bh*0.15, bw*0.15, col); }
+  var leg=null;
+  for(var j=0;j<pack.panels.length;j++){ var q=pack.panels[j]; if(q.name.toLowerCase().indexOf('leg')>=0){ if(!leg || ((q.bbox[0]+q.bbox[2])/2 > (leg.bbox[0]+leg.bbox[2])/2)) leg=q; } }
+  if(leg){ var l=leg.bbox; var lw=l[2]-l[0],lh=l[3]-l[1]; await logoMark(ctx, l[0]+lw*0.5, l[1]+lh*0.12, lw*0.42, col); }
+}
 var TARGETDEF={'Whole':{g:null,r:'full'},'Body':{g:['Body'],r:'full'},'Legs':{g:['Body'],r:'full'},'Sleeves':{g:['Sleeves'],r:'full'},'Hood':{g:['Hood'],r:'full'},'Chest band':{g:['Body'],r:'band'},'Side panels':{g:['Body'],r:'side'},'Side stripe':{g:['Body'],r:'side'},'Sleeve pillar':{g:['Sleeves'],r:'pillar'},'Shoulders':{g:['Sleeves'],r:'shoulder'}};
 function panelGroupJS(name){ var leaf=name.split('/').pop().toLowerCase();
   if(leaf.indexOf('collar')>=0)return 'Collar'; if(leaf.indexOf('hood')>=0&&leaf.indexOf('inside')<0)return 'Hood';
@@ -769,6 +778,7 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
   }
   var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalAlpha=0.5; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
   var hil=await gimg(pack.highlights); if(hil){ ctx.save(); ctx.globalAlpha=0.36; ctx.drawImage(hil,0,0,W,H); ctx.restore(); }
+  if(side==='front') await drawGarmentLogo(ctx,pack,W,H);
 }
 function renderGarmentStep(b){ var gid=state.garment; var man=GMAN[gid]; if(!man){ b.innerHTML='Loading…'; return; }
   var pieces=man.pieces||['main'];
@@ -786,7 +796,7 @@ function renderGarmentStep(b){ var gid=state.garment; var man=GMAN[gid]; if(!man
    +'<div class="kf-grid" id="patGrid"></div><div class="kf-pager" id="patPager"></div>'
    +'<div class="kf-field" style="margin-top:16px"><label>Apply '+(pieces.length>1?active.toLowerCase()+' ':'')+'pattern to</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;grid-auto-flow:row;width:100%;border:none;overflow:visible">'+tgts.map(function(t){return '<button data-gt="'+t+'" class="'+(curTgt===t?'on':'')+'">'+t+'</button>';}).join('')+'</div></div>'
    +'<div class="kf-field" style="margin-top:14px"><label>Design colours</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr"><button data-rc="0" class="'+(state.recolour?'':'on')+'">Original (HD)</button><button data-rc="1" class="'+(state.recolour?'on':'')+'">Recolour</button></div></div>'
-   +'<div class="sub-title">Garment colours</div>';
+   +'<div class="sub-title">SQD logo</div><div class="kf-field"><label>Logo colour</label><input type="color" class="glogoinp" value="'+(state.glogo||'#ffffff')+'" style="width:100%;height:38px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);cursor:pointer;padding:2px"></div>'+'<div class="sub-title">Garment colours</div>';
   for(var si=0; si<man.swatches.length; si++){ h+=colorRowG(gid,man.swatches[si].name); }
   b.innerHTML=h; buildPatGrid();
   b.querySelectorAll('[data-sec]').forEach(function(x){ x.onclick=function(){ state.gsection=x.dataset.sec; state.patPage=0; renderGarmentStep(b); }; });
@@ -796,6 +806,7 @@ function renderGarmentStep(b){ var gid=state.garment; var man=GMAN[gid]; if(!man
   b.querySelectorAll('[data-gt]').forEach(function(x){ x.onclick=function(){ state.gtgt[key]=x.dataset.gt; renderGarmentStep(b); renderAll(); }; });
   b.querySelectorAll('[data-rc]').forEach(function(x){ x.onclick=function(){ state.recolour=x.dataset.rc==='1'; renderGarmentStep(b); renderAll(); }; });
   b.querySelectorAll('.gcolinp').forEach(function(inp){ inp.oninput=function(){ state.gcol[inp.dataset.gk]=inp.value; renderAll(); }; });
+  b.querySelectorAll('.glogoinp').forEach(function(inp){ inp.oninput=function(){ state.glogo=inp.value; renderAll(); }; });
 }
 
 </script>
