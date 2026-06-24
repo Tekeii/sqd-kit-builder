@@ -722,6 +722,27 @@ function gSwatchOf(name){ var parts=name.split('/'); var leaf=parts[parts.length
 function gDefault(sw){ var l=sw.toLowerCase(); if(l.indexOf('collar')>=0||l.indexOf('cuff')>=0||l.indexOf('waist')>=0||l.indexOf('ankle')>=0||l.indexOf('zip')>=0||l.indexOf('string')>=0) return '#15284f'; if(l.indexOf('inside')>=0) return '#cccccc'; return '#e6e8eb'; }
 function gColor(gid,sw){ var k=gid+'|'+sw; return state.gcol[k]||gDefault(sw); }
 function colorRowG(gid,sw){ var v=gColor(gid,sw); return '<div class="kf-field"><label>'+sw+'</label><input type="color" class="gcolinp" data-gk="'+gid+'|'+sw+'" value="'+v+'" style="width:100%;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);cursor:pointer;padding:2px"></div>'; }
+var TARGETDEF={'Whole':{g:null,r:'full'},'Body':{g:['Body'],r:'full'},'Legs':{g:['Body'],r:'full'},'Sleeves':{g:['Sleeves'],r:'full'},'Hood':{g:['Hood'],r:'full'},'Chest band':{g:['Body'],r:'band'},'Side panels':{g:['Body'],r:'side'},'Side stripe':{g:['Body'],r:'side'},'Sleeve pillar':{g:['Sleeves'],r:'pillar'},'Shoulders':{g:['Sleeves'],r:'shoulder'}};
+function panelGroupJS(name){ var leaf=name.split('/').pop().toLowerCase();
+  if(leaf.indexOf('collar')>=0)return 'Collar'; if(leaf.indexOf('hood')>=0&&leaf.indexOf('inside')<0)return 'Hood';
+  if(leaf.indexOf('sleeve')>=0)return 'Sleeves'; if(leaf.indexOf('cuff')>=0)return 'Cuffs'; if(leaf.indexOf('ankle')>=0)return 'Ankles';
+  if(leaf.indexOf('band')>=0||leaf==='bottom')return 'Waistband'; if(leaf.indexOf('zipper')>=0||leaf==='zip')return 'Zip';
+  if(leaf.indexOf('string')>=0)return 'Strings'; if(leaf.indexOf('inside')>=0||leaf.indexOf('trim')>=0)return 'Inside'; return 'Body'; }
+function gTargets(gid,piece,groups){ var t=['Whole']; var isP=(piece==='Pants'||gid==='pants');
+  if(groups.indexOf('Body')>=0){ if(isP){ t.push('Legs'); t.push('Side stripe'); } else { t.push('Body'); t.push('Chest band'); t.push('Side panels'); } }
+  if(groups.indexOf('Sleeves')>=0){ t.push('Sleeves'); t.push('Sleeve pillar'); t.push('Shoulders'); }
+  if(groups.indexOf('Hood')>=0){ t.push('Hood'); } return t; }
+function regionRects(r,bb){ var x0=bb[0],y0=bb[1],x1=bb[2],y1=bb[3],w=x1-x0,h=y1-y0,cx=(x0+x1)/2;
+  if(r==='pillar'){var pw=w*0.20;return [[cx-pw,y0,cx+pw,y1]];}
+  if(r==='band'){return [[x0,y0,x1,y0+h*0.30]];}
+  if(r==='side'){var sw=w*0.18;return [[x0,y0,x0+sw,y1],[x1-sw,y0,x1,y1]];}
+  if(r==='shoulder'){return [[x0,y0,x1,y0+h*0.32]];}
+  return [[x0,y0,x1,y1]]; }
+function regionBox(r,bb){ var x0=bb[0],y0=bb[1],x1=bb[2],y1=bb[3],w=x1-x0,h=y1-y0,cx=(x0+x1)/2;
+  if(r==='pillar'){var pw=w*0.20;return {x:cx-pw,y:y0,w:2*pw,h:h};}
+  if(r==='band'){return {x:x0,y:y0,w:w,h:h*0.30};}
+  if(r==='shoulder'){return {x:x0,y:y0,w:w,h:h*0.32};}
+  return {x:x0,y:y0,w:w,h:h}; }
 async function garmentPattern(pid,box,clip,W,H){ await ensurePat(pid); var man=PAT_MANIFEST[pid]; if(!man) return null;
   var off=document.createElement('canvas'); off.width=W; off.height=H; var o=off.getContext('2d');
   if(!state.recolour){ var imm=await asset('pat_'+pid+'_img'); if(imm){ var s=Math.max(box.w/imm.width,box.h/imm.height); var dw=imm.width*s,dh=imm.height*s; o.drawImage(imm,box.x+(box.w-dw)/2,box.y+(box.h-dh)/2,dw,dh); o.globalCompositeOperation='destination-in'; o.drawImage(clip,0,0); return off; } }
@@ -737,11 +758,13 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
     for(var pi=0; pi<pack.panels.length; pi++){ var pan=pack.panels[pi];
       var piece=pan.name.indexOf('/')>=0?pan.name.slice(0,pan.name.indexOf('/')):'main';
       var pid=state.gpat[gid+'|'+piece]||'none'; if(pid==='none') continue;
-      var tgt=state.gtgt[gid+'|'+piece]||'Whole';
-      var inc=(tgt==='Whole')? pan.main : (gSwatchOf(pan.name)===tgt);
+      var tname=state.gtgt[gid+'|'+piece]||'Whole'; var def=TARGETDEF[tname]||TARGETDEF['Whole'];
+      var inc = def.g===null ? pan.main : (def.g.indexOf(panelGroupJS(pan.name))>=0);
       if(!inc) continue;
       var bb=pan.bbox; var cm=await gimg(pan.mask); if(!cm) continue;
-      var pat=await garmentPattern(pid,{x:bb[0],y:bb[1],w:bb[2]-bb[0],h:bb[3]-bb[1]},cm,W,H); if(pat) ctx.drawImage(pat,0,0);
+      var clip=document.createElement('canvas'); clip.width=W;clip.height=H; var cc=clip.getContext('2d'); cc.drawImage(cm,0,0,W,H);
+      if(def.r!=='full'){ cc.globalCompositeOperation='destination-in'; cc.fillStyle='#fff'; var rs=regionRects(def.r,bb); for(var ri=0;ri<rs.length;ri++){ var rr=rs[ri]; cc.fillRect(rr[0],rr[1],rr[2]-rr[0],rr[3]-rr[1]); } }
+      var pat=await garmentPattern(pid,regionBox(def.r,bb),clip,W,H); if(pat) ctx.drawImage(pat,0,0);
     }
   }
   var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalAlpha=0.5; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
@@ -754,7 +777,7 @@ function renderGarmentStep(b){ var gid=state.garment; var man=GMAN[gid]; if(!man
   var key=gid+'|'+active;
   state.pattern=state.gpat[key]||'none';
   var curTgt=state.gtgt[key]||'Whole';
-  var tgts=man.targets.filter(function(t){ return active==='main' || t==='Whole' || t.indexOf(active+' ')===0; });
+  var groups=(man.pieceGroups&&man.pieceGroups[active])||['Body']; var tgts=gTargets(gid,active,groups);
   var h='';
   if(pieces.length>1){ h+='<div class="kf-field"><label>Designing</label><div class="kf-seg" style="display:grid;grid-template-columns:repeat('+pieces.length+',1fr)">'+pieces.map(function(p){return '<button data-sec="'+p+'" class="'+(active===p?'on':'')+'">'+p+'</button>';}).join('')+'</div></div>'; }
   h+='<div class="sec-title">Design'+(pieces.length>1?' — '+active:'')+'</div>'
