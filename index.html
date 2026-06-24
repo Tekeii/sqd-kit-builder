@@ -733,15 +733,12 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
   if(man.sides.indexOf(side)<0){ canvas.width=man.w; canvas.height=man.h; canvas.getContext('2d').clearRect(0,0,man.w,man.h); return; }
   var pack=await ensureGPack(gid,side); if(!pack) return; var W=pack.w,H=pack.h; canvas.width=W; canvas.height=H; var ctx=canvas.getContext('2d'); ctx.clearRect(0,0,W,H);
   for(var zi=0; zi<pack.zones.length; zi++){ var z=pack.zones[zi]; var m=await gimg(z.mask); if(!m) continue; var col=gColor(gid,gSwatchOf(z.name)); var t=document.createElement('canvas'); t.width=W;t.height=H; var tc=t.getContext('2d'); tc.fillStyle=col; tc.fillRect(0,0,W,H); tc.globalCompositeOperation='destination-in'; tc.drawImage(m,0,0,W,H); ctx.drawImage(t,0,0); }
-  if(state.pattern!=='none'){ var tgt=state.gtarget||'Whole';
-    var tz=pack.zones.filter(function(z){return tgt==='Whole'||gSwatchOf(z.name)===tgt;});
-    var pieces={}; tz.forEach(function(z){ var ix=z.name.indexOf('/'); var pk=ix>=0?z.name.slice(0,ix):'main'; (pieces[pk]=pieces[pk]||[]).push(z); });
-    for(var pk in pieces){ var grp=pieces[pk]; var x0=1e9,y0=1e9,x1=-1,y1=-1;
-      for(var gi=0;gi<grp.length;gi++){ var bb=grp[gi].bbox; if(bb){ if(bb[0]<x0)x0=bb[0]; if(bb[1]<y0)y0=bb[1]; if(bb[2]>x1)x1=bb[2]; if(bb[3]>y1)y1=bb[3]; } }
-      if(x1<0) continue;
-      var clip=document.createElement('canvas'); clip.width=W;clip.height=H; var cc=clip.getContext('2d');
-      for(var ci=0;ci<grp.length;ci++){ var mm=await gimg(grp[ci].mask); if(mm) cc.drawImage(mm,0,0,W,H); }
-      var pat=await garmentPattern({x:x0,y:y0,w:x1-x0,h:y1-y0},clip,W,H); if(pat) ctx.drawImage(pat,0,0);
+  if(state.pattern!=='none' && pack.panels){ var tgt=state.gtarget||'Whole';
+    for(var pi=0; pi<pack.panels.length; pi++){ var pan=pack.panels[pi];
+      var inc=(tgt==='Whole')? pan.main : (gSwatchOf(pan.name)===tgt);
+      if(!inc) continue;
+      var bb=pan.bbox; var cm=await gimg(pan.mask); if(!cm) continue;
+      var pat=await garmentPattern({x:bb[0],y:bb[1],w:bb[2]-bb[0],h:bb[3]-bb[1]},cm,W,H); if(pat) ctx.drawImage(pat,0,0);
     }
   }
   var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalAlpha=0.5; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
