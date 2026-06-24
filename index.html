@@ -734,8 +734,8 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
   var pack=await ensureGPack(gid,side); if(!pack) return; var W=pack.w,H=pack.h; canvas.width=W; canvas.height=H; var ctx=canvas.getContext('2d'); ctx.clearRect(0,0,W,H);
   for(var zi=0; zi<pack.zones.length; zi++){ var z=pack.zones[zi]; var m=await gimg(z.mask); if(!m) continue; var col=gColor(gid,gSwatchOf(z.name)); var t=document.createElement('canvas'); t.width=W;t.height=H; var tc=t.getContext('2d'); tc.fillStyle=col; tc.fillRect(0,0,W,H); tc.globalCompositeOperation='destination-in'; tc.drawImage(m,0,0,W,H); ctx.drawImage(t,0,0); }
   if(state.pattern!=='none'){ var tgt=state.gtarget||'Whole'; var clip=document.createElement('canvas'); clip.width=W;clip.height=H; var cc=clip.getContext('2d'); for(var zj=0; zj<pack.zones.length; zj++){ var z2=pack.zones[zj]; if(tgt==='Whole'||gSwatchOf(z2.name)===tgt){ var mm=await gimg(z2.mask); if(mm) cc.drawImage(mm,0,0,W,H); } } var pat=await garmentPattern(W,H,clip); if(pat) ctx.drawImage(pat,0,0); }
-  var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalAlpha=0.62; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
-  var hil=await gimg(pack.highlights); if(hil){ ctx.save(); ctx.globalAlpha=0.5; ctx.drawImage(hil,0,0,W,H); ctx.restore(); }
+  var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalAlpha=0.5; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
+  var hil=await gimg(pack.highlights); if(hil){ ctx.save(); ctx.globalAlpha=0.36; ctx.drawImage(hil,0,0,W,H); ctx.restore(); }
 }
 function renderGarmentStep(b){ var gid=state.garment; var man=GMAN[gid]; if(!man){ b.innerHTML='Loading…'; return; }
   var h='<div class="sec-title">Design</div>'
