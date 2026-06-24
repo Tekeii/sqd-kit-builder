@@ -98,6 +98,10 @@ input[type=checkbox]{ accent-color:var(--neon); width:18px; height:18px; }
 .garpick button{ flex:1 1 calc(33.333% - 7px); min-width:84px; border:1.5px solid var(--line); background:var(--surface2); color:var(--text); border-radius:10px; padding:11px 6px; font-size:12px; font-weight:700; cursor:pointer; line-height:1.15; transition:.12s; }
 .garpick button.on{ border-color:var(--neon); background:rgba(57,255,20,.12); color:#fff; box-shadow:0 0 0 1px var(--neon) inset; }
 .garpick button:hover{ border-color:var(--neon); }
+.garpick .garbig{ width:100%; flex:none; font-size:15px; padding:14px 10px; border:2px solid var(--neon); background:rgba(57,255,20,.10); display:flex; flex-direction:column; gap:2px; align-items:center; margin-bottom:9px; text-transform:uppercase; letter-spacing:.02em; }
+.garpick .garbig span{ font-size:10.5px; font-weight:600; color:var(--muted); text-transform:none; letter-spacing:0; }
+.garpick .garbig.on{ background:rgba(57,255,20,.20); box-shadow:0 0 0 1px var(--neon) inset; color:#fff; }
+.garpick .garrow{ display:flex; flex-wrap:wrap; gap:7px; width:100%; }
 @media(max-width:860px){
   .kf-main{ display:flex; flex-direction:column; min-height:0; }
   .kf-main > section{ order:1; }
@@ -630,12 +634,24 @@ function downloadKit(name){ const gap=20, W=CW*2+gap; const lines=specSummary().
   x.fillStyle='#0a0c0b'; _rr(x,bx,by,bw,boxH,16); x.fill();
   x.textBaseline='alphabetic'; x.textAlign='left';
   x.fillStyle='#39ff14'; x.font='800 23px Arial,sans-serif'; x.fillText('DESIGN DETAILS', bx+pad, by+34);
-  x.textAlign='right'; x.fillStyle='#8b938d'; x.font='800 17px Arial,sans-serif'; x.fillText('SQD SPORTSWEAR  ·  £25 PER STRIP', bx+bw-pad, by+33); x.textAlign='left';
+  x.textAlign='right'; x.fillStyle='#8b938d'; x.font='800 17px Arial,sans-serif'; x.fillText('SQD SPORTSWEAR  ·  '+((GPRICE[state.garment||'kit']||GPRICE.kit)[0])+' '+((GPRICE[state.garment||'kit']||GPRICE.kit)[1].toUpperCase()), bx+bw-pad, by+33); x.textAlign='left';
   x.fillStyle='#f3f5f3'; x.font='600 18px Arial,sans-serif';
   lines.forEach((ln,i)=>{ x.fillText(ln, bx+pad, by+64+i*lineH); });
   x.save();x.globalAlpha=0.20;x.fillStyle='#0a0c0b';x.textAlign='center';x.textBaseline='middle';x.translate(c.width/2,c.height/2);x.rotate(-Math.atan2(c.height,c.width));x.font='900 '+Math.round(c.width*0.12)+'px Arial,sans-serif';var _d=Math.hypot(c.width,c.height),_st=Math.round(c.width*0.17);for(var _y=-_d/2;_y<_d/2;_y+=_st){x.fillText('SQD SPORTSWEAR · PREVIEW',0,_y);}x.restore();
   const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download=name||'sqd-kit.png'; a.click(); }
-function specSummary(){ const c=state.teamColors; const sh=SHORT_STYLES.find(x=>x.id===state.shorts.style), sk=SOCK_STYLES.find(x=>x.id===state.sock.style);
+function garmentSummary(){ var gid=state.garment; var man=GMAN[gid]; var pr=GPRICE[gid]||['',man?man.label:gid,'']; var s='Item: '+pr[1]+' ('+pr[0]+')';
+  if(gKind(gid)==='hat'){ s+='\nPeak style: '+(((state.capStyle||'flat')==='curved')?'Curved peak':'Flat peak');
+    s+='\nCap colours: '+man.swatches.map(function(sw){ return sw.name+' '+gColor(gid,sw.name).toUpperCase(); }).join(', ');
+    s+='\nBadge / logo: '+(state.club&&state.club.src?'uploaded':'none'); return s; }
+  var pieces=man.pieces||['main'];
+  pieces.forEach(function(pc){ var key=gid+'|'+pc; var pid=state.gpat[key]||'none'; var lbl=(pid==='none')?'Plain (no pattern)':(PAT_MANIFEST[pid]?PAT_MANIFEST[pid].label:pid); var tgt=state.gtgt[key]||'Whole'; s+='\n'+(pieces.length>1?pc+' design: ':'Design: ')+lbl+(pid==='none'?'':' \u2014 applied to '+tgt); });
+  var trims=man.swatches.filter(function(sw){ return gIsTrim(sw.name); }).map(function(sw){ return sw.name+' '+gColor(gid,sw.name).toUpperCase(); });
+  if(trims.length) s+='\nTrim colours: '+trims.join(', ');
+  s+='\nSQD logo colour: '+(state.glogo||'#1b1b1b').toUpperCase();
+  s+='\nClub logo: '+(state.club&&state.club.src?'uploaded':'none');
+  return s; }
+function specSummary(){ if(state.garment&&state.garment!=='kit') return garmentSummary();
+  const c=state.teamColors; const sh=SHORT_STYLES.find(x=>x.id===state.shorts.style), sk=SOCK_STYLES.find(x=>x.id===state.sock.style);
   let s='Pattern: '+(state.pattern==='none'?'Plain (no pattern)':PAT_MANIFEST[state.pattern].label);
   if(state.pattern!=='none') s+=' — applied to '+state.patternTarget;
   s+='\nKit colours: Primary '+c[0].toUpperCase()+' / Secondary '+c[1].toUpperCase()+' / Third '+c[2].toUpperCase();
@@ -694,7 +710,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); setupGarSel(); wirePriceList(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='8';
+const BUILD='9';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
@@ -741,7 +757,7 @@ function wireGarLogo(b){ var up=b.querySelector('#gLogoUp'); if(!up) return;
 function setupGarSel(){
   var pick=document.getElementById('garPick'); if(!pick) return;
   var items=[['kit','Football Kit']]; for(var gid in GMAN){ items.push([gid,GMAN[gid].label]); }
-  pick.innerHTML=items.map(function(it){ return '<button data-g="'+it[0]+'" class="'+(((state.garment||'kit')===it[0])?'on':'')+'">'+it[1]+'</button>'; }).join('');
+  var kitOn=((state.garment||'kit')==='kit')?'on':''; var others=''; for(var gk in GMAN){ others+='<button data-g="'+gk+'" class="'+(state.garment===gk?'on':'')+'">'+GMAN[gk].label+'</button>'; } pick.innerHTML='<button data-g="kit" class="garbig '+kitOn+'">Football Kit <span>Shirt &middot; shorts &middot; socks &middot; all printing</span></button><div class="garrow">'+others+'</div>';
   var ss=document.getElementById('stepSel'); if(ss) ss.style.display=((state.garment||'kit')==='kit')?'':'none';
   pick.querySelectorAll('button').forEach(function(btn){ btn.onclick=function(){ var g=btn.dataset.g; state.garment=g; state.pattern='none'; state.gtarget='Whole'; state.recolour=false;
     state.gsection=(GMAN[g]&&GMAN[g].pieces)?GMAN[g].pieces[0]:'main';
@@ -792,7 +808,7 @@ async function drawGarmentLogo(ctx,pack,W,H){
   if(state.club.img){ var c2=await clubImage(); if(c2 && body){ var cb=body.bbox; var cpw=cb[2]-cb[0],cph=cb[3]-cb[1]; var w2=cpw*0.20; var h2=c2.height*(w2/c2.width); ctx.drawImage(c2, cb[0]+cpw*0.70-w2/2, cb[1]+cph*0.23-h2/2, w2, h2); } }
   if(body){ var b=body.bbox; var bw=b[2]-b[0],bh=b[3]-b[1]; await logoMark(ctx, b[0]+bw*0.30, b[1]+bh*0.33-24, bw*0.12, state.glogo||'#1b1b1b'); }
   var leg=findLegPanel(pack);
-  if(leg){ var l=leg.bbox; var lw=l[2]-l[0],lh=l[3]-l[1]; await logoMark(ctx, l[0]+lw*0.5, l[1]+lh*0.12-24, lw*0.40, state.glogo||'#1b1b1b'); }
+  if(leg){ var l=leg.bbox; var lw=l[2]-l[0],lh=l[3]-l[1]; await logoMark(ctx, l[0]+lw*0.5, l[1]+lh*0.20, lw*0.24, state.glogo||'#1b1b1b'); }
 }
 var TARGETDEF={'Whole':{g:null,r:'full'},'Body':{g:['Body'],r:'full'},'Legs':{g:['Body'],r:'full'},'Sleeves':{g:['Sleeves'],r:'full'},'Hood':{g:['Hood'],r:'full'},'Chest band':{g:['Body'],r:'band'},'Side panels':{g:['Body'],r:'side'},'Side stripe':{g:['Body'],r:'side'},'Sleeve pillar':{g:['Sleeves'],r:'pillar'},'Shoulders':{g:['Sleeves'],r:'shoulder'}};
 function panelGroupJS(name){ var leaf=name.split('/').pop().toLowerCase();
