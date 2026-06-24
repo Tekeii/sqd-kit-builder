@@ -715,7 +715,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); setupGarSel(); wirePriceList(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='16';
+const BUILD='17';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
@@ -847,7 +847,7 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
   if(man.sides.indexOf(side)<0){ canvas.width=man.w; canvas.height=man.h; canvas.getContext('2d').clearRect(0,0,man.w,man.h); return; }
   var pack=await ensureGPack(packGid(gid),side); if(!pack) return; var W=pack.w,H=pack.h; canvas.width=W; canvas.height=H; var ctx=canvas.getContext('2d'); ctx.clearRect(0,0,W,H);
   var _qzBody=(gid==='quarterzip')?findBodyPanel(pack):null;
-  for(var zi=0; zi<pack.zones.length; zi++){ var z=pack.zones[zi]; var m=await gimg(z.mask); if(!m) continue; var col=gColor(gid,gSwatchFor(man,z.name)); var t=document.createElement('canvas'); t.width=W;t.height=H; var tc=t.getContext('2d'); tc.fillStyle=col; tc.fillRect(0,0,W,H); tc.globalCompositeOperation='destination-in'; tc.drawImage(m,0,0,W,H); if(_qzBody && /zip/i.test(z.name)){ var _cy=_qzBody.bbox[1]+(_qzBody.bbox[3]-_qzBody.bbox[1])*0.30; tc.globalCompositeOperation='destination-out'; tc.fillStyle='#000'; tc.fillRect(0,_cy,W,H-_cy); } ctx.drawImage(t,0,0); }
+  for(var zi=0; zi<pack.zones.length; zi++){ var z=pack.zones[zi]; var m=await gimg(z.mask); if(!m) continue; var col=gColor(gid,gSwatchFor(man,z.name)); var t=document.createElement('canvas'); t.width=W;t.height=H; var tc=t.getContext('2d'); tc.fillStyle=col; tc.fillRect(0,0,W,H); tc.globalCompositeOperation='destination-in'; tc.drawImage(m,0,0,W,H); if(_qzBody && /zip/i.test(z.name)){ var _bt=_qzBody.bbox[1], _bh=_qzBody.bbox[3]-_qzBody.bbox[1]; var _ct=_bt-_bh*0.04, _cb=_bt+_bh*0.30; tc.globalCompositeOperation='destination-out'; tc.fillStyle='#000'; if(_ct>0) tc.fillRect(0,0,W,_ct); tc.fillRect(0,_cb,W,H-_cb); } ctx.drawImage(t,0,0); }
   if(pack.panels){
     for(var pi=0; pi<pack.panels.length; pi++){ var pan=pack.panels[pi];
       var piece=pan.name.indexOf('/')>=0?pan.name.slice(0,pan.name.indexOf('/')):'main';
