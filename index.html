@@ -98,7 +98,7 @@ input[type=checkbox]{ accent-color:var(--neon); width:18px; height:18px; }
 .garpick button{ flex:1 1 calc(33.333% - 7px); min-width:84px; border:1.5px solid var(--line); background:var(--surface2); color:var(--text); border-radius:10px; padding:11px 6px; font-size:12px; font-weight:700; cursor:pointer; line-height:1.15; transition:.12s; }
 .garpick button.on{ border-color:var(--neon); background:rgba(57,255,20,.12); color:#fff; box-shadow:0 0 0 1px var(--neon) inset; }
 .garpick button:hover{ border-color:var(--neon); }
-.garpick .garbig{ width:100%; flex:none; font-size:15px; padding:14px 10px; border:2px solid var(--neon); background:rgba(57,255,20,.10); display:flex; flex-direction:column; gap:2px; align-items:center; margin-bottom:9px; text-transform:uppercase; letter-spacing:.02em; }
+.garpick .garbig{ width:100%; flex:none; font-size:15px; padding:14px 10px; border:1.5px solid var(--line); background:var(--surface2); color:var(--text); display:flex; flex-direction:column; gap:2px; align-items:center; margin-bottom:9px; text-transform:uppercase; letter-spacing:.02em; }
 .garpick .garbig span{ font-size:10.5px; font-weight:600; color:var(--muted); text-transform:none; letter-spacing:0; }
 .garpick .garbig.on{ background:rgba(57,255,20,.20); box-shadow:0 0 0 1px var(--neon) inset; color:#fff; }
 .garpick .garrow{ display:flex; flex-wrap:wrap; gap:7px; width:100%; }
@@ -710,7 +710,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); setupGarSel(); wirePriceList(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='11';
+const BUILD='12';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
@@ -855,8 +855,8 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
       var pat=await garmentPattern(pid,regionBox(def.r,bb),clip,W,H); if(pat) ctx.drawImage(pat,0,0);
     }
   }
-  var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalAlpha=0.5; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
-  var hil=await gimg(pack.highlights); if(hil){ ctx.save(); ctx.globalAlpha=0.36; ctx.drawImage(hil,0,0,W,H); ctx.restore(); }
+  var shd=await gimg(pack.shadows); if(shd){ ctx.globalCompositeOperation='multiply'; ctx.drawImage(shd,0,0,W,H); ctx.globalCompositeOperation='source-over'; }
+  var hil=await gimg(pack.highlights); if(hil){ ctx.globalCompositeOperation='screen'; ctx.drawImage(hil,0,0,W,H); ctx.globalCompositeOperation='source-over'; }
   if(side==='front'){ if(gid==='quarterzip') drawQuarterZip(ctx,pack,W,H); await drawGarmentLogo(ctx,pack,W,H); }
 }
 function renderGarmentStep(b){ var gid=state.garment; var man=GMAN[gid]; if(!man){ b.innerHTML='Loading…'; return; }
