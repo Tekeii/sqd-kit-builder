@@ -690,7 +690,7 @@ function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_p
 async function boot(){
   try{
     const [base,man]=await Promise.all([fetch('assets/base.json?v='+BUILD,{cache:'no-store'}).then(r=>r.json()), fetch('assets/manifest.json?v='+BUILD,{cache:'no-store'}).then(r=>r.json())]);
-    ASSETS=base.assets; NUMFONTS=base.numfonts; PAT_MANIFEST=man; try{ GMAN=await fetch('assets/garments/manifest.json?v='+BUILD).then(function(r){return r.json();}); }catch(e){ GMAN={}; }
+    ASSETS=base.assets; NUMFONTS=base.numfonts; PAT_MANIFEST=man; try{ GMAN=await fetch('assets/garments/manifest.json?v='+BUILD,{cache:'no-store'}).then(function(r){return r.json();}); }catch(e){ GMAN={}; }
     PATTERNS=[{id:'none',label:'None'}].concat(Object.keys(PAT_MANIFEST).map(id=>({id,label:PAT_MANIFEST[id].label})));
     CATS=['All'].concat(['Stripes','Hoops','Geometric','Camo','Texture','Solid','Abstract'].filter(c=>Object.values(PAT_MANIFEST).some(m=>m.cat===c)));
     init();
@@ -707,7 +707,7 @@ function setupGarSel(){
   sel.onchange=function(){ state.garment=sel.value; state.pattern='none'; state.gtarget='Whole'; var s2=document.getElementById('stepSel'); if(s2) s2.style.display=(state.garment==='kit')?'':'none'; if(state.garment==='kit') state.step='shirt'; renderStep(); renderAll(); };
 }
 function gimg(src){ if(GIMG[src]) return GIMG[src]; var im=new Image(); var p=new Promise(function(res){ im.onload=function(){res(im);}; im.onerror=function(){res(null);}; }); im.src=src; GIMG[src]=p; return p; }
-function ensureGPack(gid,side){ var k=gid+'_'+side; if(GPACK[k]) return GPACK[k]; GPACK[k]=fetch('assets/garments/base-'+k+'.json?v='+BUILD).then(function(r){return r.json();}).catch(function(){return null;}); return GPACK[k]; }
+function ensureGPack(gid,side){ var k=gid+'_'+side; if(GPACK[k]) return GPACK[k]; GPACK[k]=fetch('assets/garments/base-'+k+'.json?v='+BUILD,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return null;}); return GPACK[k]; }
 function gSwatchOf(name){ var parts=name.split('/'); var leaf=parts[parts.length-1].toLowerCase(); var pre=parts.length>1?parts[0].toLowerCase():''; var P=(pre==='jacket'||pre==='pants')?(parts[0]+' '):'';
   if(leaf.indexOf('collar')>=0) return P+'Collar';
   if(leaf.indexOf('hood')>=0 && leaf.indexOf('inside')<0) return P+'Hood';
