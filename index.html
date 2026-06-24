@@ -179,7 +179,7 @@ const NUM_FONTS={ block:{label:'Block (bold)',css:'900 #px Arial,Helvetica,sans-
 const state={
   step:'shirt', view:'both', zoom:320,
   colors:{ body:'#c9ced4', sides:'#aab0b8', sleeves:'#aab0b8', cuffs:'#ffffff', collar:'#ffffff', piping:'#ffffff', socks:'#c9ced4' },
-  pattern:'none', patCat:'All', patSearch:'', patPage:0, patternTarget:'whole', recolour:false, garment:'kit', gtarget:'Whole', gcol:{}, teamColors:['#d2d6db','#ffffff','#9aa1aa','#6e757e','#e6e8eb','#4b525a'],
+  pattern:'none', patCat:'All', patSearch:'', patPage:0, patternTarget:'whole', recolour:false, garment:'kit', gtarget:'Whole', gcol:{}, gpat:{}, gtgt:{}, gsection:'', teamColors:['#d2d6db','#ffffff','#9aa1aa','#6e757e','#e6e8eb','#4b525a'],
   shorts:{ style:'plain', base:'#c9ced4', stripe:'#ffffff', stripe2:'#9aa1aa', pillarBorder:'#6e757e', flareL:'#9aa1aa', flareR:'#6e757e', flarePattern:false, baseAuto:true },
   sock:{ style:'plain', base:'#c9ced4', accent:'#ffffff', accent2:'#9aa1aa', baseAuto:true },
   logo:{ shirtPos:'chest', shirtColor:'#ffffff', shortsColor:'#ffffff', socksColor:'#ffffff' },
@@ -704,7 +704,7 @@ function setupGarSel(){
   for(var gid in GMAN){ opts+='<option value="'+gid+'">'+GMAN[gid].label+'</option>'; }
   sel.innerHTML=opts; sel.value=state.garment||'kit';
   var ss=document.getElementById('stepSel'); if(ss) ss.style.display=(state.garment==='kit')?'':'none';
-  sel.onchange=function(){ state.garment=sel.value; state.pattern='none'; state.gtarget='Whole'; var s2=document.getElementById('stepSel'); if(s2) s2.style.display=(state.garment==='kit')?'':'none'; if(state.garment==='kit') state.step='shirt'; renderStep(); renderAll(); };
+  sel.onchange=function(){ state.garment=sel.value; state.pattern='none'; state.gtarget='Whole'; state.gsection=(GMAN[state.garment]&&GMAN[state.garment].pieces)?GMAN[state.garment].pieces[0]:'main'; var s2=document.getElementById('stepSel'); if(s2) s2.style.display=(state.garment==='kit')?'':'none'; if(state.garment==='kit') state.step='shirt'; renderStep(); renderAll(); };
 }
 function gimg(src){ if(GIMG[src]) return GIMG[src]; var im=new Image(); var p=new Promise(function(res){ im.onload=function(){res(im);}; im.onerror=function(){res(null);}; }); im.src=src; GIMG[src]=p; return p; }
 function ensureGPack(gid,side){ var k=gid+'_'+side; if(GPACK[k]) return GPACK[k]; GPACK[k]=fetch('assets/garments/base-'+k+'.json?v='+BUILD,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return null;}); return GPACK[k]; }
@@ -722,7 +722,7 @@ function gSwatchOf(name){ var parts=name.split('/'); var leaf=parts[parts.length
 function gDefault(sw){ var l=sw.toLowerCase(); if(l.indexOf('collar')>=0||l.indexOf('cuff')>=0||l.indexOf('waist')>=0||l.indexOf('ankle')>=0||l.indexOf('zip')>=0||l.indexOf('string')>=0) return '#15284f'; if(l.indexOf('inside')>=0) return '#cccccc'; return '#e6e8eb'; }
 function gColor(gid,sw){ var k=gid+'|'+sw; return state.gcol[k]||gDefault(sw); }
 function colorRowG(gid,sw){ var v=gColor(gid,sw); return '<div class="kf-field"><label>'+sw+'</label><input type="color" class="gcolinp" data-gk="'+gid+'|'+sw+'" value="'+v+'" style="width:100%;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);cursor:pointer;padding:2px"></div>'; }
-async function garmentPattern(box,clip,W,H){ var pid=state.pattern; await ensurePat(pid); var man=PAT_MANIFEST[pid]; if(!man) return null;
+async function garmentPattern(pid,box,clip,W,H){ await ensurePat(pid); var man=PAT_MANIFEST[pid]; if(!man) return null;
   var off=document.createElement('canvas'); off.width=W; off.height=H; var o=off.getContext('2d');
   if(!state.recolour){ var imm=await asset('pat_'+pid+'_img'); if(imm){ var s=Math.max(box.w/imm.width,box.h/imm.height); var dw=imm.width*s,dh=imm.height*s; o.drawImage(imm,box.x+(box.w-dw)/2,box.y+(box.h-dh)/2,dw,dh); o.globalCompositeOperation='destination-in'; o.drawImage(clip,0,0); return off; } }
   var sh=await asset('pat_'+pid+'_sh'); if(!sh) return null; var s2=Math.max(box.w/sh.width,box.h/sh.height); var dw2=sh.width*s2,dh2=sh.height*s2; var dx=box.x+(box.w-dw2)/2,dy=box.y+(box.h-dh2)/2; var pal=man.palette||['#888888'];
@@ -733,30 +733,44 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
   if(man.sides.indexOf(side)<0){ canvas.width=man.w; canvas.height=man.h; canvas.getContext('2d').clearRect(0,0,man.w,man.h); return; }
   var pack=await ensureGPack(gid,side); if(!pack) return; var W=pack.w,H=pack.h; canvas.width=W; canvas.height=H; var ctx=canvas.getContext('2d'); ctx.clearRect(0,0,W,H);
   for(var zi=0; zi<pack.zones.length; zi++){ var z=pack.zones[zi]; var m=await gimg(z.mask); if(!m) continue; var col=gColor(gid,gSwatchOf(z.name)); var t=document.createElement('canvas'); t.width=W;t.height=H; var tc=t.getContext('2d'); tc.fillStyle=col; tc.fillRect(0,0,W,H); tc.globalCompositeOperation='destination-in'; tc.drawImage(m,0,0,W,H); ctx.drawImage(t,0,0); }
-  if(state.pattern!=='none' && pack.panels){ var tgt=state.gtarget||'Whole';
+  if(pack.panels){
     for(var pi=0; pi<pack.panels.length; pi++){ var pan=pack.panels[pi];
+      var piece=pan.name.indexOf('/')>=0?pan.name.slice(0,pan.name.indexOf('/')):'main';
+      var pid=state.gpat[gid+'|'+piece]||'none'; if(pid==='none') continue;
+      var tgt=state.gtgt[gid+'|'+piece]||'Whole';
       var inc=(tgt==='Whole')? pan.main : (gSwatchOf(pan.name)===tgt);
       if(!inc) continue;
       var bb=pan.bbox; var cm=await gimg(pan.mask); if(!cm) continue;
-      var pat=await garmentPattern({x:bb[0],y:bb[1],w:bb[2]-bb[0],h:bb[3]-bb[1]},cm,W,H); if(pat) ctx.drawImage(pat,0,0);
+      var pat=await garmentPattern(pid,{x:bb[0],y:bb[1],w:bb[2]-bb[0],h:bb[3]-bb[1]},cm,W,H); if(pat) ctx.drawImage(pat,0,0);
     }
   }
   var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalAlpha=0.5; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
   var hil=await gimg(pack.highlights); if(hil){ ctx.save(); ctx.globalAlpha=0.36; ctx.drawImage(hil,0,0,W,H); ctx.restore(); }
 }
 function renderGarmentStep(b){ var gid=state.garment; var man=GMAN[gid]; if(!man){ b.innerHTML='Loading…'; return; }
-  var h='<div class="sec-title">Design</div>'
+  var pieces=man.pieces||['main'];
+  if(pieces.length>1 && pieces.indexOf(state.gsection)<0) state.gsection=pieces[0];
+  var active=pieces.length>1?state.gsection:pieces[0];
+  var key=gid+'|'+active;
+  state.pattern=state.gpat[key]||'none';
+  var curTgt=state.gtgt[key]||'Whole';
+  var tgts=man.targets.filter(function(t){ return active==='main' || t==='Whole' || t.indexOf(active+' ')===0; });
+  var h='';
+  if(pieces.length>1){ h+='<div class="kf-field"><label>Designing</label><div class="kf-seg" style="display:grid;grid-template-columns:repeat('+pieces.length+',1fr)">'+pieces.map(function(p){return '<button data-sec="'+p+'" class="'+(active===p?'on':'')+'">'+p+'</button>';}).join('')+'</div></div>'; }
+  h+='<div class="sec-title">Design'+(pieces.length>1?' — '+active:'')+'</div>'
    +'<div class="kf-cattabs" id="catTabs">'+CATS.map(function(c){return '<button class="cattab'+(state.patCat===c?' on':'')+'" data-cat="'+c+'">'+c+'</button>';}).join('')+'</div>'
    +'<input id="patSearch" class="kf-input" placeholder="Search designs…" style="margin-bottom:10px" value="'+(state.patSearch||'')+'">'
    +'<div class="kf-grid" id="patGrid"></div><div class="kf-pager" id="patPager"></div>'
-   +'<div class="kf-field" style="margin-top:16px"><label>Apply pattern to</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;grid-auto-flow:row;width:100%;border:none;overflow:visible">'+man.targets.map(function(t){return '<button data-gt="'+t+'" class="'+(state.gtarget===t?'on':'')+'">'+t+'</button>';}).join('')+'</div></div>'
+   +'<div class="kf-field" style="margin-top:16px"><label>Apply '+(pieces.length>1?active.toLowerCase()+' ':'')+'pattern to</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;grid-auto-flow:row;width:100%;border:none;overflow:visible">'+tgts.map(function(t){return '<button data-gt="'+t+'" class="'+(curTgt===t?'on':'')+'">'+t+'</button>';}).join('')+'</div></div>'
    +'<div class="kf-field" style="margin-top:14px"><label>Design colours</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr"><button data-rc="0" class="'+(state.recolour?'':'on')+'">Original (HD)</button><button data-rc="1" class="'+(state.recolour?'on':'')+'">Recolour</button></div></div>'
    +'<div class="sub-title">Garment colours</div>';
   for(var si=0; si<man.swatches.length; si++){ h+=colorRowG(gid,man.swatches[si].name); }
   b.innerHTML=h; buildPatGrid();
+  b.querySelectorAll('[data-sec]').forEach(function(x){ x.onclick=function(){ state.gsection=x.dataset.sec; state.patPage=0; renderGarmentStep(b); }; });
   b.querySelectorAll('#catTabs button').forEach(function(btn){ btn.onclick=function(){ state.patCat=btn.dataset.cat; state.patPage=0; renderGarmentStep(b); }; });
   var se=b.querySelector('#patSearch'); if(se) se.oninput=function(){ state.patSearch=se.value; state.patPage=0; buildPatGrid(); };
-  b.querySelectorAll('[data-gt]').forEach(function(x){ x.onclick=function(){ state.gtarget=x.dataset.gt; renderGarmentStep(b); renderAll(); }; });
+  b.querySelectorAll('#patGrid [data-p]').forEach(function(t){ t.onclick=function(){ state.gpat[key]=t.dataset.p; renderGarmentStep(b); renderAll(); }; });
+  b.querySelectorAll('[data-gt]').forEach(function(x){ x.onclick=function(){ state.gtgt[key]=x.dataset.gt; renderGarmentStep(b); renderAll(); }; });
   b.querySelectorAll('[data-rc]').forEach(function(x){ x.onclick=function(){ state.recolour=x.dataset.rc==='1'; renderGarmentStep(b); renderAll(); }; });
   b.querySelectorAll('.gcolinp').forEach(function(inp){ inp.oninput=function(){ state.gcol[inp.dataset.gk]=inp.value; renderAll(); }; });
 }
