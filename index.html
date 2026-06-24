@@ -722,10 +722,10 @@ function gSwatchOf(name){ var parts=name.split('/'); var leaf=parts[parts.length
 function gDefault(sw){ var l=sw.toLowerCase(); if(l.indexOf('collar')>=0||l.indexOf('cuff')>=0||l.indexOf('waist')>=0||l.indexOf('ankle')>=0||l.indexOf('zip')>=0||l.indexOf('string')>=0) return '#15284f'; if(l.indexOf('inside')>=0) return '#cccccc'; return '#e6e8eb'; }
 function gColor(gid,sw){ var k=gid+'|'+sw; return state.gcol[k]||gDefault(sw); }
 function colorRowG(gid,sw){ var v=gColor(gid,sw); return '<div class="kf-field"><label>'+sw+'</label><input type="color" class="gcolinp" data-gk="'+gid+'|'+sw+'" value="'+v+'" style="width:100%;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);cursor:pointer;padding:2px"></div>'; }
-async function garmentPattern(W,H,clip){ var pid=state.pattern; await ensurePat(pid); var man=PAT_MANIFEST[pid]; if(!man) return null;
+async function garmentPattern(box,clip,W,H){ var pid=state.pattern; await ensurePat(pid); var man=PAT_MANIFEST[pid]; if(!man) return null;
   var off=document.createElement('canvas'); off.width=W; off.height=H; var o=off.getContext('2d');
-  if(!state.recolour){ var imm=await asset('pat_'+pid+'_img'); if(imm){ var s=Math.max(W/imm.width,H/imm.height); var dw=imm.width*s,dh=imm.height*s; o.drawImage(imm,(W-dw)/2,(H-dh)/2,dw,dh); o.globalCompositeOperation='destination-in'; o.drawImage(clip,0,0); return off; } }
-  var sh=await asset('pat_'+pid+'_sh'); if(!sh) return null; var s2=Math.max(W/sh.width,H/sh.height); var dw2=sh.width*s2,dh2=sh.height*s2; var dx=(W-dw2)/2,dy=(H-dh2)/2; var pal=man.palette||['#888888'];
+  if(!state.recolour){ var imm=await asset('pat_'+pid+'_img'); if(imm){ var s=Math.max(box.w/imm.width,box.h/imm.height); var dw=imm.width*s,dh=imm.height*s; o.drawImage(imm,box.x+(box.w-dw)/2,box.y+(box.h-dh)/2,dw,dh); o.globalCompositeOperation='destination-in'; o.drawImage(clip,0,0); return off; } }
+  var sh=await asset('pat_'+pid+'_sh'); if(!sh) return null; var s2=Math.max(box.w/sh.width,box.h/sh.height); var dw2=sh.width*s2,dh2=sh.height*s2; var dx=box.x+(box.w-dw2)/2,dy=box.y+(box.h-dh2)/2; var pal=man.palette||['#888888'];
   var t0=document.createElement('canvas'); t0.width=W;t0.height=H; var tc0=t0.getContext('2d'); tc0.fillStyle=pal[0]||'#888'; tc0.fillRect(dx,dy,dw2,dh2); tc0.globalCompositeOperation='multiply'; tc0.drawImage(sh,dx,dy,dw2,dh2); o.drawImage(t0,0,0);
   for(var i=1;i<man.slots;i++){ var m=await asset('pat_'+pid+'_'+i); if(!m) continue; var t=document.createElement('canvas'); t.width=W;t.height=H; var tc=t.getContext('2d'); tc.fillStyle=pal[i%pal.length]||'#888'; tc.fillRect(0,0,W,H); tc.globalCompositeOperation='multiply'; tc.drawImage(sh,dx,dy,dw2,dh2); tc.globalCompositeOperation='destination-in'; tc.drawImage(m,dx,dy,dw2,dh2); o.drawImage(t,0,0); }
   o.globalCompositeOperation='destination-in'; o.drawImage(clip,0,0); return off; }
@@ -733,7 +733,17 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
   if(man.sides.indexOf(side)<0){ canvas.width=man.w; canvas.height=man.h; canvas.getContext('2d').clearRect(0,0,man.w,man.h); return; }
   var pack=await ensureGPack(gid,side); if(!pack) return; var W=pack.w,H=pack.h; canvas.width=W; canvas.height=H; var ctx=canvas.getContext('2d'); ctx.clearRect(0,0,W,H);
   for(var zi=0; zi<pack.zones.length; zi++){ var z=pack.zones[zi]; var m=await gimg(z.mask); if(!m) continue; var col=gColor(gid,gSwatchOf(z.name)); var t=document.createElement('canvas'); t.width=W;t.height=H; var tc=t.getContext('2d'); tc.fillStyle=col; tc.fillRect(0,0,W,H); tc.globalCompositeOperation='destination-in'; tc.drawImage(m,0,0,W,H); ctx.drawImage(t,0,0); }
-  if(state.pattern!=='none'){ var tgt=state.gtarget||'Whole'; var clip=document.createElement('canvas'); clip.width=W;clip.height=H; var cc=clip.getContext('2d'); for(var zj=0; zj<pack.zones.length; zj++){ var z2=pack.zones[zj]; if(tgt==='Whole'||gSwatchOf(z2.name)===tgt){ var mm=await gimg(z2.mask); if(mm) cc.drawImage(mm,0,0,W,H); } } var pat=await garmentPattern(W,H,clip); if(pat) ctx.drawImage(pat,0,0); }
+  if(state.pattern!=='none'){ var tgt=state.gtarget||'Whole';
+    var tz=pack.zones.filter(function(z){return tgt==='Whole'||gSwatchOf(z.name)===tgt;});
+    var pieces={}; tz.forEach(function(z){ var ix=z.name.indexOf('/'); var pk=ix>=0?z.name.slice(0,ix):'main'; (pieces[pk]=pieces[pk]||[]).push(z); });
+    for(var pk in pieces){ var grp=pieces[pk]; var x0=1e9,y0=1e9,x1=-1,y1=-1;
+      for(var gi=0;gi<grp.length;gi++){ var bb=grp[gi].bbox; if(bb){ if(bb[0]<x0)x0=bb[0]; if(bb[1]<y0)y0=bb[1]; if(bb[2]>x1)x1=bb[2]; if(bb[3]>y1)y1=bb[3]; } }
+      if(x1<0) continue;
+      var clip=document.createElement('canvas'); clip.width=W;clip.height=H; var cc=clip.getContext('2d');
+      for(var ci=0;ci<grp.length;ci++){ var mm=await gimg(grp[ci].mask); if(mm) cc.drawImage(mm,0,0,W,H); }
+      var pat=await garmentPattern({x:x0,y:y0,w:x1-x0,h:y1-y0},clip,W,H); if(pat) ctx.drawImage(pat,0,0);
+    }
+  }
   var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalAlpha=0.5; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
   var hil=await gimg(pack.highlights); if(hil){ ctx.save(); ctx.globalAlpha=0.36; ctx.drawImage(hil,0,0,W,H); ctx.restore(); }
 }
