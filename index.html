@@ -715,7 +715,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); setupGarSel(); wirePriceList(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='18';
+const BUILD='19';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
@@ -810,7 +810,7 @@ async function drawGarmentLogo(ctx,pack,W,H){
     return;
   }
   var body=findBodyPanel(pack);
-  if(state.club.img){ var c2=await clubImage(); if(c2 && body){ var cb=body.bbox; var cpw=cb[2]-cb[0],cph=cb[3]-cb[1]; var w2=cpw*0.20; var h2=c2.height*(w2/c2.width); ctx.drawImage(c2, cb[0]+cpw*0.70-w2/2, cb[1]+cph*0.23-h2/2, w2, h2); } }
+  if(state.club.img){ var c2=await clubImage(); if(c2 && body){ var cb=body.bbox; var cpw=cb[2]-cb[0],cph=cb[3]-cb[1]; var w2=cpw*0.20; var h2=c2.height*(w2/c2.width); ctx.drawImage(c2, cb[0]+cpw*0.70-w2/2, cb[1]+cph*0.23-h2/2+14, w2, h2); } }
   if(body){ var b=body.bbox; var bw=b[2]-b[0],bh=b[3]-b[1]; await logoMark(ctx, b[0]+bw*0.30, b[1]+bh*0.33-24, bw*0.12, state.glogo||'#1b1b1b'); }
   var leg=findLegPanel(pack);
   if(leg){ var l=leg.bbox; var lw=l[2]-l[0],lh=l[3]-l[1]; await logoMark(ctx, l[0]+lw*0.5, l[1]+lh*0.20, lw*0.24, state.glogo||'#1b1b1b'); }
@@ -847,7 +847,7 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
   if(man.sides.indexOf(side)<0){ canvas.width=man.w; canvas.height=man.h; canvas.getContext('2d').clearRect(0,0,man.w,man.h); return; }
   var pack=await ensureGPack(packGid(gid),side); if(!pack) return; var W=pack.w,H=pack.h; canvas.width=W; canvas.height=H; var ctx=canvas.getContext('2d'); ctx.clearRect(0,0,W,H);
   var _qzBody=(gid==='quarterzip')?findBodyPanel(pack):null;
-  for(var zi=0; zi<pack.zones.length; zi++){ var z=pack.zones[zi]; var m=await gimg(z.mask); if(!m) continue; var col=gColor(gid,gSwatchFor(man,z.name)); var t=document.createElement('canvas'); t.width=W;t.height=H; var tc=t.getContext('2d'); tc.fillStyle=col; tc.fillRect(0,0,W,H); tc.globalCompositeOperation='destination-in'; tc.drawImage(m,0,0,W,H); if(_qzBody && /zip/i.test(z.name)){ var _cy=_qzBody.bbox[1]+(_qzBody.bbox[3]-_qzBody.bbox[1])*0.28; tc.globalCompositeOperation='destination-out'; tc.fillStyle='#000'; tc.fillRect(0,_cy,W,H-_cy); } ctx.drawImage(t,0,0); }
+  for(var zi=0; zi<pack.zones.length; zi++){ var z=pack.zones[zi]; if(gid==='quarterzip' && /zip/i.test(z.name)) continue; var m=await gimg(z.mask); if(!m) continue; var col=gColor(gid,gSwatchFor(man,z.name)); var t=document.createElement('canvas'); t.width=W;t.height=H; var tc=t.getContext('2d'); tc.fillStyle=col; tc.fillRect(0,0,W,H); tc.globalCompositeOperation='destination-in'; tc.drawImage(m,0,0,W,H); ctx.drawImage(t,0,0); }
   if(pack.panels){
     for(var pi=0; pi<pack.panels.length; pi++){ var pan=pack.panels[pi];
       var piece=pan.name.indexOf('/')>=0?pan.name.slice(0,pan.name.indexOf('/')):'main';
@@ -857,10 +857,12 @@ async function renderGarmentSide(canvas, side){ var gid=state.garment; var man=G
       if(!inc) continue;
       var bb=pan.bbox; var cm=await gimg(pan.mask); if(!cm) continue;
       var clip=document.createElement('canvas'); clip.width=W;clip.height=H; var cc=clip.getContext('2d'); cc.drawImage(cm,0,0,W,H);
+      if(gid==='quarterzip' && /body/i.test(pan.name)){ for(var _zu=0;_zu<pack.zones.length;_zu++){ if(/zip/i.test(pack.zones[_zu].name)){ var _zum=await gimg(pack.zones[_zu].mask); if(_zum) cc.drawImage(_zum,0,0,W,H); } } }
       if(def.r!=='full'){ cc.globalCompositeOperation='destination-in'; cc.fillStyle='#fff'; var rs=regionRects(def.r,bb); for(var ri=0;ri<rs.length;ri++){ var rr=rs[ri]; cc.fillRect(rr[0],rr[1],rr[2]-rr[0],rr[3]-rr[1]); } }
       var pat=await garmentPattern(pid,regionBox(def.r,bb),clip,W,H); if(pat) ctx.drawImage(pat,0,0);
     }
   }
+  if(gid==='quarterzip' && _qzBody){ var _cyz=_qzBody.bbox[1]+(_qzBody.bbox[3]-_qzBody.bbox[1])*0.28; for(var _zt=0; _zt<pack.zones.length; _zt++){ var _zz=pack.zones[_zt]; var _zn=_zz.name.toLowerCase(); if(_zn.indexOf('zipper')<0 || _zn.indexOf('path')>=0 || _zn.indexOf('ends')>=0) continue; var _zmk=await gimg(_zz.mask); if(!_zmk) continue; var _zcol=gColor(gid,gSwatchFor(man,_zz.name)); var _zc=document.createElement('canvas'); _zc.width=W;_zc.height=H; var _zx=_zc.getContext('2d'); _zx.fillStyle=_zcol; _zx.fillRect(0,0,W,H); _zx.globalCompositeOperation='destination-in'; _zx.drawImage(_zmk,0,0,W,H); _zx.globalCompositeOperation='destination-out'; _zx.fillStyle='#000'; _zx.fillRect(0,_cyz,W,H-_cyz); ctx.drawImage(_zc,0,0); } }
   var shd=await gimg(pack.shadows); if(shd){ ctx.save(); ctx.globalCompositeOperation='multiply'; ctx.globalAlpha=0.42; ctx.drawImage(shd,0,0,W,H); ctx.restore(); }
   var hil=await gimg(pack.highlights); if(hil){ ctx.save(); ctx.globalCompositeOperation='screen'; ctx.globalAlpha=0.12; ctx.drawImage(hil,0,0,W,H); ctx.restore(); }
   if(side==='front'){ await drawGarmentLogo(ctx,pack,W,H); }
