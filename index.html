@@ -168,7 +168,7 @@ const NUM_FONTS={ block:{label:'Block (bold)',css:'900 #px Arial,Helvetica,sans-
 const state={
   step:'shirt', view:'both', zoom:320,
   colors:{ body:'#c9ced4', sides:'#aab0b8', sleeves:'#aab0b8', cuffs:'#ffffff', collar:'#ffffff', piping:'#ffffff', socks:'#c9ced4' },
-  pattern:'none', patCat:'All', patSearch:'', patPage:0, patternTarget:'whole', teamColors:['#d2d6db','#ffffff','#9aa1aa','#6e757e','#e6e8eb','#4b525a'],
+  pattern:'none', patCat:'All', patSearch:'', patPage:0, patternTarget:'whole', recolour:false, teamColors:['#d2d6db','#ffffff','#9aa1aa','#6e757e','#e6e8eb','#4b525a'],
   shorts:{ style:'plain', base:'#c9ced4', stripe:'#ffffff', stripe2:'#9aa1aa', pillarBorder:'#6e757e', flareL:'#9aa1aa', flareR:'#6e757e', flarePattern:false, baseAuto:true },
   sock:{ style:'plain', base:'#c9ced4', accent:'#ffffff', accent2:'#9aa1aa', baseAuto:true },
   logo:{ shirtPos:'chest', shirtColor:'#ffffff', shortsColor:'#ffffff', socksColor:'#ffffff' },
@@ -203,7 +203,9 @@ const shirtBox=(side)=>maskBox(side,['body','sides','sleeves','cuffs'],'shirt');
 async function patternImage(side, box, clipCanvas){
   const pid=state.pattern; if(pid==='none') return null;
   await ensurePat(pid);
-  const man=PAT_MANIFEST[pid]; const sh=await asset('pat_'+pid+'_sh'); if(!sh) return null;
+  const man=PAT_MANIFEST[pid];
+  if(!state.recolour){ const im=await asset('pat_'+pid+'_img'); if(im){ const s2=Math.max(box.w/im.width, box.h/im.height); const dw2=im.width*s2, dh2=im.height*s2; const dx2=box.x+(box.w-dw2)/2, dy2=box.y+(box.h-dh2)/2; const off2=document.createElement('canvas'); off2.width=CW; off2.height=CH; const o2=off2.getContext('2d'); o2.drawImage(im,dx2,dy2,dw2,dh2); if(clipCanvas){ o2.globalCompositeOperation='destination-in'; o2.drawImage(clipCanvas,0,0); } return off2; } }
+  const sh=await asset('pat_'+pid+'_sh'); if(!sh) return null;
   const s=Math.max(box.w/sh.width, box.h/sh.height); const dw=sh.width*s, dh=sh.height*s;
   const dx=box.x+(box.w-dw)/2, dy=box.y+(box.h-dh)/2;
   const pal=state.teamColors;
@@ -529,12 +531,14 @@ function renderPatOpts(wrap){
   if(state.pattern!=='none'){
     h+='<div class="kf-field" style="margin-top:16px"><label>Apply pattern to</label>'
       +'<div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr 1fr"><button data-ap="whole" class="'+(state.patternTarget==='whole'?'on':'')+'">Whole shirt</button><button data-ap="body" class="'+(state.patternTarget==='body'?'on':'')+'">Main body</button><button data-ap="sleeves" class="'+(state.patternTarget==='sleeves'?'on':'')+'">Just sleeves</button></div></div>';
+    h+='<div class="kf-field" style="margin-top:14px"><label>Design colours</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr"><button data-rc="0" class="'+(state.recolour?'':'on')+'">Original (HD)</button><button data-rc="1" class="'+(state.recolour?'on':'')+'">Recolour</button></div></div>';
   }
   const n=state.pattern==='none'?3:Math.max(3,PAT_MANIFEST[state.pattern].slots);
   h+='<div class="sub-title">Kit colours</div>';
   for(let i=0;i<n;i++){ const c=state.teamColors[i]||'#9aa1aa'; h+='<div class="kf-seprow"><div class="kf-color" data-ti="'+i+'"><span class="kf-ring"><span style="background:'+c+'"></span></span><span class="nm">'+names[i]+'</span><span class="hex">'+c.toUpperCase()+'</span><input type="color" value="'+c+'" style="position:absolute;opacity:0;width:0;height:0"></div></div>'; }
   wrap.innerHTML=h;
   wrap.querySelectorAll('[data-ap]').forEach(btn=>btn.onclick=()=>{ state.patternTarget=btn.dataset.ap; renderStep(); renderAll(); });
+  wrap.querySelectorAll('[data-rc]').forEach(btn=>btn.onclick=()=>{ state.recolour=btn.dataset.rc==='1'; renderStep(); renderAll(); });
   wrap.querySelectorAll('[data-ti]').forEach(row=>{ const i=+row.dataset.ti;
     row.onclick=()=>openColorPicker(row, state.teamColors[i]||'#9aa1aa', c=>{ state.teamColors[i]=c; row.querySelector('.kf-ring>span').style.background=c; row.querySelector('.hex').textContent=c.toUpperCase(); renderAll(); refreshThumbs(); }); });
 }
@@ -662,7 +666,7 @@ function init(){
   setupNumberDrag(); setupCanvasClicks(); applyView(); renderStep(); renderAll();
   if(state.club.src) processClub().then(()=>{ renderStep(); renderAll(); });
 }
-const BUILD='4';
+const BUILD='5';
 const _patLoaded={};
 function ensurePat(pid){ if(!pid||pid==='none') return Promise.resolve(); if(!_patLoaded[pid]){ _patLoaded[pid]=fetch('assets/pat/'+pid+'.json?v='+BUILD).then(r=>r.json()).then(d=>{ for(const k in d) ASSETS['pat_'+pid+'_'+k]=d[k]; }).catch(()=>{}); } return _patLoaded[pid]; }
 async function boot(){
