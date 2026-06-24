@@ -108,6 +108,16 @@ input[type=checkbox]{ accent-color:var(--neon); width:18px; height:18px; }
 </style>
 </head>
 <body>
+  <style>
+  @media(min-width:821px){
+    html,body{height:100%}
+    body{display:flex;flex-direction:column;height:100vh;overflow:hidden;margin:0}
+    .kf-main{flex:1 1 auto;min-height:0!important}
+    .kf-left{min-height:0;display:flex;flex-direction:column}
+    .kf-left .kf-body{flex:1 1 auto;overflow-y:auto;min-height:0}
+    .kf-main>section{overflow-y:auto;min-height:0}
+  }
+  </style>
   <div class="kf-head"><img id="brandLogo" alt="SQD"><div class="ti"><h1>Full Kit Builder</h1></div></div>
   <div class="kf-main">
     <aside class="kf-left">
@@ -121,7 +131,7 @@ input[type=checkbox]{ accent-color:var(--neon); width:18px; height:18px; }
         <label>Zoom <input type="range" id="zoom" min="240" max="640" value="320"></label>
       </div>
       <div class="kf-hint"><b>Tip:</b> click the shirt, shorts, socks or number on the kit to jump to its options</div>
-      <div class="kf-preview">
+      <div id="rcNote" style="display:none;margin:0 24px 10px;padding:10px 14px;background:rgba(57,255,20,.08);border:1px solid #2a3a26;border-radius:10px;font-size:12.5px;line-height:1.45;color:#cfe9c4;text-align:center"><b style="color:var(--neon)">Recolour preview</b> &mdash; this is a sample only and may appear blurry or distorted. A high&#8209;quality mockup will be generated upon request.</div><div class="kf-preview">
         <div class="kf-view" id="viewFront"><canvas id="cFront"></canvas><div class="lbl">Front</div></div>
         <div class="kf-view" id="viewBack"><canvas id="cBack"></canvas><div class="lbl">Back</div></div>
       </div>
@@ -390,7 +400,7 @@ async function renderSide(canvas, side){
   if(side==='back') await drawNumber(ctx);
 }
 let q=false;
-function renderAll(){ if(q)return; q=true; requestAnimationFrame(async()=>{ q=false; await renderSide(document.getElementById('cFront'),'front'); await renderSide(document.getElementById('cBack'),'back'); }); }
+function renderAll(){ var _rc=document.getElementById('rcNote'); if(_rc) _rc.style.display=state.recolour?'block':'none'; if(q)return; q=true; requestAnimationFrame(async()=>{ q=false; await renderSide(document.getElementById('cFront'),'front'); await renderSide(document.getElementById('cBack'),'back'); }); }
 function applyView(){
   document.getElementById('viewFront').style.display=(state.view==='back')?'none':'';
   document.getElementById('viewBack').style.display=(state.view==='front')?'none':'';
@@ -538,7 +548,6 @@ function renderPatOpts(wrap){
     h+='<div class="kf-field" style="margin-top:16px"><label>Apply pattern to</label>'
       +'<div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:row;gap:6px;width:100%;border:none;overflow:visible">'+[['whole','Whole shirt'],['body','Main body'],['sleeves','Just sleeves'],['front','Front only'],['back','Back only'],['chest','Chest patch'],['left','Left side'],['right','Right side']].map(function(o){return '<button data-ap="'+o[0]+'" class="'+(state.patternTarget===o[0]?'on':'')+'">'+o[1]+'</button>';}).join('')+'</div></div>';
     h+='<div class="kf-field" style="margin-top:14px"><label>Design colours</label><div class="kf-seg" style="display:grid;grid-template-columns:1fr 1fr"><button data-rc="0" class="'+(state.recolour?'':'on')+'">Original (HD)</button><button data-rc="1" class="'+(state.recolour?'on':'')+'">Recolour</button></div></div>';
-    if(state.recolour) h+='<div style="margin-top:8px;padding:8px 10px;background:rgba(57,255,20,.07);border:1px solid #1c211d;border-radius:8px;font-size:11px;line-height:1.45;color:#9aa39c">This is just a sample preview &mdash; recoloured designs may appear blurry or distorted. A high&#8209;quality mockup will be generated upon request.</div>';
   }
   const n=state.pattern==='none'?3:Math.max(3,PAT_MANIFEST[state.pattern].slots);
   h+='<div class="sub-title">Kit colours</div>';
